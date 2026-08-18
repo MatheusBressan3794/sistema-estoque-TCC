@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque de Alimentos</title>
+</head>
+<body>
+
+    <h1>Estoque de Alimentos</h1>
+
+    <form method="GET">
+        <input
+            type="text"
+            name="busca"
+            placeholder="Pesquisar alimento..."
+            value="{{ busca }}"
+        >
+    
+        <button type="submit">Pesquisar</button>
+
+
+        <br>
+        <br>
+    <a href="{% url 'criar_alimento' %}">
+        Cadastrar novo alimento
+    </a>
+
+    <br><br>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Quantidade</th>
+                <th>Data de validade</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for alimento in alimentos %}
+                <tr>
+                    <td>{{ alimento.nome }}</td>
+                    <td>{{ alimento.quantidade }}</td>
+                    <td>{{ alimento.data_validade|date:"d/m/Y" }}</td>
+
+                    <td>
+                        <a href="{% url 'atualizar_alimento' alimento.id %}">
+                            Editar
+                        </a>
+
+                        |
+
+                        <a href="{% url 'deletar_alimento' alimento.id %}">
+                            Excluir
+                        </a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4">
+                        Nenhum alimento cadastrado.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

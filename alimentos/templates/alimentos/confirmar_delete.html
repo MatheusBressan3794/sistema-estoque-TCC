@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excluir alimento</title>
+</head>
+<body>
+
+    <h1>Excluir alimento</h1>
+
+    <p>
+        Tem certeza que deseja excluir o alimento
+        <strong>{{ alimento.nome }}</strong>?
+    </p>
+
+    <p>
+        Quantidade: {{ alimento.quantidade }}
+    </p>
+
+    <p>
+        Data de validade:
+        {{ alimento.data_validade|date:"d/m/Y" }}
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <button type="submit">
+            Sim, excluir
+        </button>
+
+        <a href="{% url 'listar_alimentos' %}">
+            Cancelar
+        </a>
+    </form>
+
+</body>
+</html>
