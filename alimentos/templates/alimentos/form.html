@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastrar alimento</title>
+</head>
+<body>
+
+    <h1>Cadastrar alimento</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Salvar
+        </button>
+
+        <a href="{% url 'listar_alimentos' %}">
+            Cancelar
+        </a>
+    </form>
+
+</body>
+</html>
