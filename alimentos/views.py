@@ -43,3 +43,26 @@ def deletar_alimento(request, id):
         alimento.delete()
         return redirect('listar_alimentos')
     return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento})
+
+def inicio(request):
+    return render(request, 'alimentos/inicio.html')
+
+
+def login(request):
+    return render(request, 'alimentos/login.html')
+
+
+def cadastro(request):
+    return render(request, 'alimentos/cadastro.html')
+
+
+def dashboard(request):
+    return render(request, 'alimentos/dashboard.html')
+
+
+def movimentacao(request):
+    return render(request, 'alimentos/movimentacao.html')
+
+
+def relatorios(request):
+    return render(request, 'alimentos/relatorios.html')
