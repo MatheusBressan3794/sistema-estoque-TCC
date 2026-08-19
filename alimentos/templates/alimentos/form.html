@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends 'alimentos/base.html' %}
+{% block title %}{{ form.instance.pk|yesno:"Editar alimento,Novo alimento" }}{% endblock %}{% block page_label %}Estoque / Cadastro{% endblock %}
+{% block content %}<section class="page-heading"><div><span class="eyebrow orange">{% if form.instance.pk %}ATUALIZAÇÃO{% else %}NOVO CADASTRO{% endif %}</span><h1>{% if form.instance.pk %}Editar alimento{% else %}Cadastrar alimento{% endif %}</h1><p>Preencha os dados para manter seu estoque atualizado.</p></div></section><section class="form-panel"><form method="POST" novalidate>{% csrf_token %}{% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}<div class="row g-4">{% for field in form %}<div class="col-md-{% if field.name == 'nome' %}12{% else %}6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="field-error">{{ error }}</div>{% endfor %}</div>{% endfor %}</div><div class="form-actions"><a href="{% url 'listar_alimentos' %}" class="btn btn-light-custom">Cancelar</a><button type="submit" class="btn btn-primary-custom"><i class="bi bi-check-lg"></i> Salvar alimento</button></div></form></section>{% endblock %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">

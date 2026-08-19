@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends 'alimentos/base.html' %}
+{% block title %}Movimentação{% endblock %}{% block page_label %}Movimentação{% endblock %}
+{% block content %}<section class="page-heading"><div><span class="eyebrow orange">HISTÓRICO DO ESTOQUE</span><h1>Movimentação</h1><p>Registre e acompanhe as entradas e saídas dos seus itens.</p></div></section><section class="empty-feature"><div class="empty-feature-icon"><i class="bi bi-arrow-left-right"></i></div><h2>Movimentações em um só lugar</h2><p>O histórico das suas movimentações ficará disponível aqui para facilitar o acompanhamento da rotina.</p><a href="{% url 'listar_alimentos' %}" class="btn btn-primary-custom">Ir para o estoque <i class="bi bi-arrow-right"></i></a></section>{% endblock %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">

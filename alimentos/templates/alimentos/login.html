@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends 'alimentos/base.html' %}
+{% block title %}Acessar sistema{% endblock %}
+{% block body %}<main class="auth-page"><div class="auth-brand"><span class="brand-mark"><i class="bi bi-box-seam"></i></span><strong>despensa</strong></div><section class="auth-card"><span class="eyebrow orange">ÁREA RESTRITA</span><h1>Bom ter você de volta.</h1><p class="auth-intro">Acesse o painel para continuar cuidando do seu estoque.</p><div class="demo-form"><label class="form-label">E-mail</label><input class="form-control" type="email" placeholder="seu@email.com"><label class="form-label">Senha</label><input class="form-control" type="password" placeholder="••••••••"><a href="{% url 'dashboard' %}" class="btn btn-primary-custom w-100 justify-content-center">Entrar <i class="bi bi-arrow-right"></i></a></div><p class="auth-footer">Ainda não possui uma conta? <a href="{% url 'cadastro' %}">Cadastre-se</a></p></section><a class="back-home" href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Voltar para o início</a></main>{% endblock %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">

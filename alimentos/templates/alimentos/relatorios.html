@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends 'alimentos/base.html' %}
+{% block title %}Relatórios{% endblock %}{% block page_label %}Relatórios{% endblock %}
+{% block content %}<section class="page-heading"><div><span class="eyebrow orange">INSIGHTS DO ESTOQUE</span><h1>Relatórios</h1><p>Transforme os dados do seu estoque em decisões melhores.</p></div></section><section class="empty-feature report-feature"><div class="empty-feature-icon green"><i class="bi bi-bar-chart-line"></i></div><h2>Seus relatórios começam aqui</h2><p>Assim que houver movimentações registradas, você poderá acompanhar a evolução do estoque por aqui.</p><a href="{% url 'movimentacao' %}" class="btn btn-secondary-custom">Ver movimentação <i class="bi bi-arrow-right"></i></a></section>{% endblock %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
