@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+{% extends 'alimentos/base.html' %}
+{% block title %}Excluir alimento{% endblock %}{% block page_label %}Estoque / Exclusão{% endblock %}
+{% block content %}<section class="page-heading"><div><span class="eyebrow orange">ATENÇÃO</span><h1>Excluir alimento</h1><p>Esta ação não pode ser desfeita.</p></div></section><section class="form-panel delete-panel"><div class="delete-icon"><i class="bi bi-trash3"></i></div><h2>Remover {{ alimento.nome }}?</h2><p>O item será excluído permanentemente do seu estoque.</p><div class="delete-details"><span>Quantidade <strong>{{ alimento.quantidade }} unidades</strong></span><span>Validade <strong>{{ alimento.data_validade|date:"d/m/Y" }}</strong></span></div><form method="POST" class="form-actions">{% csrf_token %}<a href="{% url 'listar_alimentos' %}" class="btn btn-light-custom">Cancelar</a><button type="submit" class="btn btn-danger-custom"><i class="bi bi-trash3"></i> Sim, excluir</button></form></section>{% endblock %}<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">

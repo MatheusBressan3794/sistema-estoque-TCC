@@ -1,13 +1,16 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio</title>
-</head>
-<body>
-    <h1>Tela de inicio</h1>
-    <a href="{% url 'login' %}">Login</a><br>
-    <a href="{% url 'cadastro' %}">Cadastro</a>
-</body>
-</html>
+{% extends 'alimentos/base.html' %}
+{% block title %}Início{% endblock %}
+{% block body %}
+<main class="welcome-page">
+    <div class="welcome-orbit orbit-one"></div><div class="welcome-orbit orbit-two"></div>
+    <header class="welcome-header"><div class="brand-lockup"><span class="brand-mark"><i class="bi bi-box-seam"></i></span><span>Stock Guardians<small>gestão de estoque</small></span></div><span class="welcome-status"><i class="bi bi-circle-fill"></i> organização que funciona</span></header>
+    <section class="welcome-center">
+        <span class="eyebrow orange">BEM-VINDO AO SEU SISTEMA DE</span>
+        <h1>gerenciamento<br><em>de estoque</em></h1>
+        <p>Controle total na palma da sua mão.</p>
+        <div class="welcome-illustration" aria-hidden="true"><span class="illustration-circle"></span><span class="illustration-spark spark-one">✦</span><span class="illustration-spark spark-two">✦</span><div class="illustration-crate"><i class="bi bi-box-seam"></i></div><div class="illustration-leaf leaf-one"></div><div class="illustration-leaf leaf-two"></div><div class="illustration-card"><i class="bi bi-check-circle-fill"></i> estoque em dia</div></div>
+        <div class="welcome-actions"><a class="btn btn-primary-custom" href="{% url 'cadastro' %}">Cadastrar-se <i class="bi bi-arrow-up-right"></i></a><a class="btn btn-outline-custom" href="{% url 'login' %}">Login <i class="bi bi-arrow-right"></i></a></div>
+    </section>
+    <footer class="welcome-footer"><span><i class="bi bi-shield-check"></i> simples, claro e seguro</span><span>© 2026 Stock Guardians</span></footer>
+</main>
+{% endblock %}
