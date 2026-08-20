@@ -1,0 +1,36 @@
+[
+{
+    "model": "auth.user",
+    "fields": {
+        "password": "pbkdf2_sha256$1000000$NisyePWAj4cfbU5TiEvG1J$1+UjsGKkt6j1IdDIUfdHgco19LEt/4yDHlAcCXzi3pU=",
+        "last_login": "2026-08-20T15:02:26.282Z",
+        "is_superuser": true,
+        "username": "Rhuan",
+        "first_name": "",
+        "last_name": "",
+        "email": "alvarinhorhuan@gmail.com",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-08-20T15:01:25.752Z",
+        "groups": [],
+        "user_permissions": []
+    }
+},
+{
+    "model": "sessions.session",
+    "pk": "0bglqwra6ncxyenhu3zmnca6e71bcd5z",
+    "fields": {
+        "session_data": ".eJxVjMEOgjAQRP-lZ9N0i7TUo3e_odnt7gpqIKFwMv67kHDQZE7z3szbZFyXPq9V5jywuRgwp9-OsDxl3AE_cLxPtkzjMg9kd8UetNrbxPK6Hu7fQY-139ak6qVTVRL2sUHgmIBYyQdwUVoM7LpGAM8phdICNEipMIiLbos3ny8YGjhR:1wx4Hi:yExFuyWRvMceo2EDt_1eREugtZw5r_veGR4lr6NXRxQ",
+        "expire_date": "2026-09-03T15:02:26.287Z"
+    }
+},
+{
+    "model": "alimentos.alimento",
+    "pk": 1,
+    "fields": {
+        "nome": "Cenoura",
+        "quantidade": 2,
+        "data_validade": "2026-08-28"
+    }
+}
+]
