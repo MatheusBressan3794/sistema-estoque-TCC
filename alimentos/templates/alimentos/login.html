@@ -1,14 +1,49 @@
 {% extends 'alimentos/base.html' %}
-{% block title %}Acessar sistema{% endblock %}
-{% block body %}<main class="auth-page"><div class="auth-brand"><span class="brand-mark"><i class="bi bi-box-seam"></i></span><strong>despensa</strong></div><section class="auth-card"><span class="eyebrow orange">ÁREA RESTRITA</span><h1>Bom ter você de volta.</h1><p class="auth-intro">Acesse o painel para continuar cuidando do seu estoque.</p><div class="demo-form"><label class="form-label">E-mail</label><input class="form-control" type="email" placeholder="seu@email.com"><label class="form-label">Senha</label><input class="form-control" type="password" placeholder="••••••••"><a href="{% url 'dashboard' %}" class="btn btn-primary-custom w-100 justify-content-center">Entrar <i class="bi bi-arrow-right"></i></a></div><p class="auth-footer">Ainda não possui uma conta? <a href="{% url 'cadastro' %}">Cadastre-se</a></p></section><a class="back-home" href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Voltar para o início</a></main>{% endblock %}<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-</head>
-<body>
-    <h1>Tela de login</h1>
-    <a href="{% url 'dashboard' %}">entrar</a>
-</body>
-</html>
+{% load static %}
+{% block title %}Entrar - Stock Guardians{% endblock %}
+
+{% block body %}
+<main class="auth-page">
+    <div class="auth-brand">
+        <img src="{% static 'alimentos/img/logo.png' %}" alt="Logo Stock Guardians" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+        <span class="brand-mark" style="display:none;"><i class="bi bi-box-seam"></i></span>
+        <strong>Stock Guardians</strong>
+    </div>
+
+    <section class="auth-card">
+        <span class="eyebrow orange">BEM-VINDO DE VOLTA</span>
+        <h1>Acesse sua conta.</h1>
+        <p class="auth-intro">Insira suas credenciais para gerenciar o estoque escolar no Stock Guardians.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-3" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'login' %}" class="demo-form">
+            {% csrf_token %}
+
+            <div class="mb-3 text-start">
+                <label class="form-label" for="id_username">Usuário</label>
+                <input class="form-control" type="text" name="username" id="id_username" placeholder="Digite seu usuário" required>
+            </div>
+
+            <div class="mb-3 text-start">
+                <label class="form-label" for="id_password">Senha</label>
+                <input class="form-control" type="password" name="password" id="id_password" placeholder="Digite sua senha" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100 justify-content-center mt-2">
+                Entrar <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <p class="auth-footer mt-3">Ainda não tem conta? <a href="{% url 'cadastro' %}">Cadastre-se</a></p>
+    </section>
+
+    <a class="back-home" href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Voltar para o início</a>
+</main>
+{% endblock %}
