@@ -1,16 +1,12 @@
 from django.urls import path
 from . import views
 
-from django.urls import path
-from . import views
-
 urlpatterns = [
-
     # Tela inicial
     path('', views.inicio, name='inicio'),
 
     # Autenticação
-    path('login/', views.login, name='login'),
+    path('login/', views.login_view, name='login'),
     path('cadastro/', views.cadastro, name='cadastro'),
 
     # Dashboard

@@ -1,14 +1,52 @@
 {% extends 'alimentos/base.html' %}
-{% block title %}Criar conta{% endblock %}
-{% block body %}<main class="auth-page"><div class="auth-brand"><span class="brand-mark"><i class="bi bi-box-seam"></i></span><strong>despensa</strong></div><section class="auth-card"><span class="eyebrow orange">PRIMEIRO PASSO</span><h1>Crie seu espaço.</h1><p class="auth-intro">Cadastre-se para começar a organizar sua rotina de estoque.</p><div class="demo-form"><label class="form-label">Nome completo</label><input class="form-control" type="text" placeholder="Como podemos chamar você?"><label class="form-label">E-mail</label><input class="form-control" type="email" placeholder="seu@email.com"><label class="form-label">Senha</label><input class="form-control" type="password" placeholder="Crie uma senha segura"><a href="{% url 'dashboard' %}" class="btn btn-primary-custom w-100 justify-content-center">Criar conta <i class="bi bi-arrow-right"></i></a></div><p class="auth-footer">Já possui uma conta? <a href="{% url 'login' %}">Entrar</a></p></section><a class="back-home" href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Voltar para o início</a></main>{% endblock %}<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro</title>
-</head>
-<body>
-    <h1>Cadastro Usuário</h1>
-    <a href="{% url 'inicio' %}">Cadastrar</a>
-</body>
-</html>
+{% load static %}
+{% block title %}Criar conta - Stock Guardians{% endblock %}
+
+{% block body %}
+<main class="auth-page">
+    <div class="auth-brand">
+        <!-- Exibe a Logo do Projeto se ela existir; caso contrário, exibe o ícone -->
+        <img src="{% static 'alimentos/img/logo.png' %}" alt="Logo Stock Guardians" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
+        <span class="brand-mark" style="display:none;"><i class="bi bi-box-seam"></i></span>
+        <strong>Stock Guardians</strong>
+    </div>
+
+    <section class="auth-card">
+        <span class="eyebrow orange">PRIMEIRO PASSO</span>
+        <h1>Crie seu espaço.</h1>
+        <p class="auth-intro">Cadastre-se para começar a organizar o estoque escolar com o Stock Guardians.</p>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-3" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{% url 'cadastro' %}" class="demo-form">
+            {% csrf_token %}
+
+            {% for field in form %}
+                <div class="mb-3 text-start">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-danger small mt-1">
+                            {{ field.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary-custom w-100 justify-content-center mt-2">
+                Criar conta <i class="bi bi-arrow-right"></i>
+            </button>
+        </form>
+
+        <p class="auth-footer mt-3">Já possui uma conta? <a href="{% url 'login' %}">Entrar</a></p>
+    </section>
+
+    <a class="back-home" href="{% url 'inicio' %}"><i class="bi bi-arrow-left"></i> Voltar para o início</a>
+</main>
+{% endblock %}
