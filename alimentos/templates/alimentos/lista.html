@@ -8,169 +8,179 @@
 
 <section class="page-heading">
 
-    <div>
-        <span class="eyebrow orange">CATÁLOGO DE PRODUTOS</span>
+```
+<div>
+    <span class="eyebrow orange">CATÁLOGO DE PRODUTOS</span>
 
-        <h1>Estoque de alimentos</h1>
+    <h1>Estoque de alimentos</h1>
 
-        <p>
-            Gerencie os itens disponíveis na sua despensa.
-        </p>
-    </div>
+    <p>
+        Gerencie os itens disponíveis na sua despensa.
+    </p>
+</div>
 
-    <a href="{% url 'criar_alimento' %}" class="btn btn-primary-custom">
-        <i class="bi bi-plus-lg"></i>
-        Cadastrar alimento
-    </a>
+<a href="{% url 'criar_alimento' %}" class="btn btn-primary-custom">
+    <i class="bi bi-plus-lg"></i>
+    Cadastrar alimento
+</a>
+```
 
 </section>
 
-
 <section class="data-panel">
 
-    <!-- Pesquisa -->
-    <form method="GET" class="toolbar">
+```
+<!-- Pesquisa -->
+<form method="GET" class="toolbar">
 
-        <div class="search-field">
+    <div class="search-field">
 
-            <i class="bi bi-search"></i>
+        <i class="bi bi-search"></i>
 
-            <input
-                type="search"
-                name="busca"
-                placeholder="Pesquisar por nome..."
-                value="{{ busca }}"
-                aria-label="Pesquisar alimento"
-            >
+        <input
+            type="search"
+            name="busca"
+            placeholder="Pesquisar por nome..."
+            value="{{ busca }}"
+            aria-label="Pesquisar alimento"
+        >
 
-            <button type="submit">
-                Buscar
-            </button>
-
-        </div>
-
-        <span class="result-count">
-            {{ alimentos|length }}
-            item{{ alimentos|length|pluralize:",s" }}
-        </span>
-
-    </form>
-
-    <!-- Tabela -->
-    <div class="table-responsive">
-
-        <table class="table inventory-table">
-
-            <thead>
-
-                <tr>
-                    <th>Alimento</th>
-                    <th>Unidade</th>
-                    <th>Peso</th>
-                    <th>Qtd. mínima</th>
-                    <th>Tipo de uso</th>
-                    <th class="text-end">Ações</th>
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                {% for alimento in alimentos %}
-
-                <tr>
-                    <!-- Nome -->
-                    <td>
-
-                        <div class="product-name">
-
-                            <span class="product-icon">
-                                <i class="bi bi-box"></i>
-                            </span>
-
-                            <strong>
-                                {{ alimento.nome }}
-                            </strong>
-
-                        </div>
-
-                    </td>
-
-                    <!-- Unidade de medida -->
-                    <td>
-                        {{ alimento.unidade_medida }}
-                    </td>
-
-                    <!-- Peso -->
-                    <td>
-                        {{ alimento.peso }} Kg
-                    </td>
-
-
-                    <!-- Quantidade mínima -->
-                    <td>
-                        {{ alimento.quantidade_minima }}
-                    </td>
-
-
-                    <!-- Tipo de uso -->
-                    <td>
-                        {{ alimento.get_tipo_uso_display }}
-                    </td>
-
-
-                    <!-- Ações -->
-                    <td class="text-end">
-
-                        <a
-                            class="table-action"
-                            href="{% url 'atualizar_alimento' alimento.id %}"
-                            aria-label="Editar {{ alimento.nome }}"
-                        >
-                            <i class="bi bi-pencil"></i>
-                        </a>
-
-
-                        <a
-                            class="table-action danger"
-                            href="{% url 'deletar_alimento' alimento.id %}"
-                            aria-label="Excluir {{ alimento.nome }}"
-                        >
-                            <i class="bi bi-trash3"></i>
-                        </a>
-
-                    </td>
-
-                </tr>
-
-
-                {% empty %}
-
-                <tr>
-
-                    <td colspan="6" class="empty-state">
-
-                        <i class="bi bi-inbox"></i>
-
-                        <strong>
-                            Nenhum alimento encontrado
-                        </strong>
-
-                        <span>
-                            Cadastre um item ou ajuste sua busca.
-                        </span>
-
-                    </td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
+        <button type="submit">
+            Buscar
+        </button>
 
     </div>
+
+    <span class="result-count">
+        {{ alimentos|length }}
+        item{{ alimentos|length|pluralize:",s" }}
+    </span>
+
+</form>
+
+
+<!-- Tabela -->
+<div class="table-responsive">
+
+    <table class="table inventory-table">
+
+        <thead>
+
+            <tr>
+                <th>Alimento</th>
+                <th>Embalagem</th>
+                <th>Conteúdo</th>
+                <th>Qtd. mínima</th>
+                <th>Tipo de uso</th>
+                <th class="text-end">Ações</th>
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for alimento in alimentos %}
+
+            <tr>
+
+                <!-- Nome -->
+                <td>
+
+                    <div class="product-name">
+
+                        <span class="product-icon">
+                            <i class="bi bi-box"></i>
+                        </span>
+
+                        <strong>
+                            {{ alimento.nome }}
+                        </strong>
+
+                    </div>
+
+                </td>
+
+
+                <!-- Embalagem -->
+                <td>
+                    {{ alimento.get_embalagem_display }}
+                </td>
+
+
+                <!-- Conteúdo da embalagem -->
+                <td>
+                    {{ alimento.quantidade_embalagem }}
+                    {{ alimento.get_unidade_medida_display }}
+                </td>
+
+
+                <!-- Quantidade mínima -->
+                <td>
+                    {{ alimento.quantidade_minima }}
+                    {{ alimento.get_embalagem_display}}s
+                </td>
+
+
+                <!-- Tipo de uso -->
+                <td>
+                    {{ alimento.get_tipo_uso_display }}
+                </td>
+
+
+                <!-- Ações -->
+                <td class="text-end">
+
+                    <a
+                        class="table-action"
+                        href="{% url 'atualizar_alimento' alimento.id %}"
+                        aria-label="Editar {{ alimento.nome }}"
+                    >
+                        <i class="bi bi-pencil"></i>
+                    </a>
+
+
+                    <a
+                        class="table-action danger"
+                        href="{% url 'deletar_alimento' alimento.id %}"
+                        aria-label="Excluir {{ alimento.nome }}"
+                    >
+                        <i class="bi bi-trash3"></i>
+                    </a>
+
+                </td>
+
+            </tr>
+
+
+            {% empty %}
+
+            <tr>
+
+                <td colspan="6" class="empty-state">
+
+                    <i class="bi bi-inbox"></i>
+
+                    <strong>
+                        Nenhum alimento encontrado
+                    </strong>
+
+                    <span>
+                        Cadastre um item ou ajuste sua busca.
+                    </span>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+```
 
 </section>
 

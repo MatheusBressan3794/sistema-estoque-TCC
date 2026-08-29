@@ -8,12 +8,14 @@ class AlimentoForm(forms.ModelForm):
 
     class Meta:
         model = Alimento
+
         fields = [
             'nome',
+            'embalagem',
+            'quantidade_embalagem',
             'unidade_medida',
-            'peso',
             'quantidade_minima',
-            'tipo_uso'
+            'tipo_uso',
         ]
 
 

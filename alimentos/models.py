@@ -7,6 +7,23 @@ from django.db import models
 
 class Alimento(models.Model):
 
+    EMBALAGENS = [
+        ('PACOTE', 'Pacote'),
+        ('CAIXA', 'Caixa'),
+        ('LATA', 'Lata'),
+        ('VIDRO', 'Vidro'),
+        ('GARRAFA', 'Garrafa'),
+        ('POTE', 'Pote'),
+        ('SACO', 'Saco'),
+    ]
+
+    UNIDADES_MEDIDA = [
+        ('KG', 'kg'),
+        ('G', 'g'),
+        ('L', 'L'),
+        ('ML', 'ml'),
+    ]
+
     TIPOS_USO = [
         ('LANCHE', 'Lanche'),
         ('ALMOCO', 'Almoço'),
@@ -14,11 +31,19 @@ class Alimento(models.Model):
 
     nome = models.CharField(max_length=100)
 
-    unidade_medida = models.CharField(max_length=50)
+    embalagem = models.CharField(
+        max_length=20,
+        choices=EMBALAGENS
+    )
 
-    peso = models.DecimalField(
+    quantidade_embalagem = models.DecimalField(
         max_digits=10,
         decimal_places=2
+    )
+
+    unidade_medida = models.CharField(
+        max_length=5,
+        choices=UNIDADES_MEDIDA
     )
 
     quantidade_minima = models.IntegerField()
@@ -42,14 +67,12 @@ class Lote(models.Model):
 
     numero_lote = models.CharField(max_length=100)
 
-    data_validade = models.DateField()
-
     quantidade_atual = models.IntegerField(default=0)
+
+    data_validade = models.DateField()
 
     def __str__(self):
         return f"{self.alimento.nome} - Lote {self.numero_lote}"
-    
-
 class Movimentacao(models.Model):
 
     TIPOS = [
@@ -70,7 +93,7 @@ class Movimentacao(models.Model):
 
     quantidade = models.IntegerField()
 
-    data_movimentacao = models.DateTimeField(
+    data_movimentacao = models.DateField(
         auto_now_add=True
     )
 
