@@ -1,8 +1,11 @@
 {% load static %}
 <aside class="sidebar" id="app-sidebar">
-    <div class="brand-lockup">
-       <img src="{% static 'alimentos/img/logo.jpeg' %}" alt="Stock Guardians" class="brand-logo-img" style="height: 38px; width: auto; object-fit: contain;">
-        <span>Stock Guardians<small>gestão de estoque</small></span>
+    <div class="brand-lockup d-flex align-items-center gap-2 p-2">
+        <img src="{% static 'alimentos/img/logo.jpeg' %}" alt="Stock Guardians" class="brand-logo-img" style="height: 42px; width: auto; object-fit: contain;">
+        <span class="d-flex flex-column">
+            <strong style="line-height: 1.1;">Stock Guardians</strong>
+            <small style="font-size: 0.75rem; color: #6c757d;">gestão de estoque</small>
+        </span>
     </div>
     <div class="sidebar-label">Navegação</div>
     <nav class="sidebar-nav" aria-label="Navegação principal">
