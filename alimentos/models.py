@@ -1,9 +1,5 @@
 from django.db import models
-
-from django.db import models
-
-from django.db import models
-
+from django.core.validators import MinValueValidator  # Importação necessária para a validação
 
 class Alimento(models.Model):
 
@@ -38,7 +34,8 @@ class Alimento(models.Model):
 
     quantidade_embalagem = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=2,
+        validators=[MinValueValidator(0.0)]  # Impede valores negativos
     )
 
     unidade_medida = models.CharField(
@@ -46,7 +43,9 @@ class Alimento(models.Model):
         choices=UNIDADES_MEDIDA
     )
 
-    quantidade_minima = models.IntegerField()
+    quantidade_minima = models.IntegerField(
+        validators=[MinValueValidator(0)]  # Impede valores negativos
+    )
 
     tipo_uso = models.CharField(
         max_length=10,
@@ -67,12 +66,17 @@ class Lote(models.Model):
 
     numero_lote = models.CharField(max_length=100)
 
-    quantidade_atual = models.IntegerField(default=0)
+    quantidade_atual = models.IntegerField(
+        default=0,
+        validators=[MinValueValidator(0)]  # Estoque não pode ficar negativo
+    )
 
     data_validade = models.DateField()
 
     def __str__(self):
         return f"{self.alimento.nome} - Lote {self.numero_lote}"
+
+
 class Movimentacao(models.Model):
 
     TIPOS = [
@@ -91,7 +95,9 @@ class Movimentacao(models.Model):
         choices=TIPOS
     )
 
-    quantidade = models.IntegerField()
+    quantidade = models.IntegerField(
+        validators=[MinValueValidator(1)]  # Movimentação tem que ser pelo menos 1
+    )
 
     data_movimentacao = models.DateField(
         auto_now_add=True
