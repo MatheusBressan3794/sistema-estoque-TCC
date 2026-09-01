@@ -1,0 +1,98 @@
+{% extends 'alimentos/base.html' %}
+
+{% block title %}{{ alimento.nome }}{% endblock %}
+
+{% block page_label %}Detalhes do alimento{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow orange">ESTOQUE</span>
+        <h1>{{ alimento.nome }}</h1>
+        <p>Confira os lotes e a quantidade disponível.</p>
+    </div>
+</section>
+
+<section class="form-panel">
+
+    <h2>Informações do alimento</h2>
+
+    <p>
+        <strong>Embalagem:</strong>
+        {{ alimento.get_embalagem_display }}
+    </p>
+
+    <p>
+        <strong>Conteúdo:</strong>
+        {{ alimento.quantidade_embalagem }}
+        {{ alimento.get_unidade_medida_display }}
+    </p>
+
+    <p>
+        <strong>Quantidade mínima:</strong>
+        {{ alimento.quantidade_minima }} embalagens
+    </p>
+
+    <p>
+        <strong>Tipo de uso:</strong>
+        {{ alimento.get_tipo_uso_display }}
+    </p>
+
+    <hr>
+
+    <h2>Lotes em estoque</h2>
+
+    {% if lotes %}
+
+        <div class="table-responsive">
+            <table class="table">
+
+                <thead>
+                    <tr>
+                        <th>Lote</th>
+                        <th>Quantidade</th>
+                        <th>Validade</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for lote in lotes %}
+
+                        <tr>
+                            <td>
+                                {{ lote.numero_lote }}
+                            </td>
+
+                            <td>
+                                {{ lote.quantidade_atual }} embalagens
+                            </td>
+
+                            <td>
+                                {{ lote.data_validade|date:"d/m/Y" }}
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+        </div>
+
+    {% else %}
+
+        <p>Nenhum lote registrado para este alimento.</p>
+
+    {% endif %}
+
+    <div class="form-actions">
+        <a href="{% url 'listar_alimentos' %}" class="btn btn-light-custom">
+            Voltar para o estoque
+        </a>
+    </div>
+
+</section>
+
+{% endblock %}

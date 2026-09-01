@@ -22,6 +22,20 @@ def listar_alimentos(request):
         }
     )
 
+# Detalhes do alimento e seus lotes
+def detalhes_alimento(request, id):
+    alimento = get_object_or_404(Alimento, id=id)
+    lotes = alimento.lotes.all()
+
+    return render(
+        request,
+        'alimentos/detalhes_alimento.html',
+        {
+            'alimento': alimento,
+            'lotes': lotes
+        }
+    )
+
 #Criar alimento
 def criar_alimento(request):
     form = AlimentoForm(request.POST or None)

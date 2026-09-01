@@ -18,6 +18,9 @@ urlpatterns = [
     path('alimentos/editar/<int:id>/', views.atualizar_alimento, name='atualizar_alimento'),
     path('alimentos/deletar/<int:id>/', views.deletar_alimento, name='deletar_alimento'),
 
+    #Ver lotes do alimento
+    path('alimentos/<int:id>/', views.detalhes_alimento,       name='detalhes_alimento'),
+
     # Movimentação
     path('movimentacao/', views.movimentacao_estoque,
         name='movimentacao_estoque'),
