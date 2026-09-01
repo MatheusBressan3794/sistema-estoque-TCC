@@ -86,19 +86,19 @@
 
                 <!-- Nome -->
                 <td>
+                    <a href="{% url 'detalhes_alimento' alimento.id %}">
+                        <div class="product-name">
 
-                    <div class="product-name">
+                            <span class="product-icon">
+                                <i class="bi bi-box"></i>
+                            </span>
 
-                        <span class="product-icon">
-                            <i class="bi bi-box"></i>
-                        </span>
-
-                        <strong>
-                            {{ alimento.nome }}
-                        </strong>
-
-                    </div>
-
+                            <strong>
+                                {{ alimento.nome }}
+                            </strong>
+                    
+                        </div>
+                    </a>
                 </td>
 
 
