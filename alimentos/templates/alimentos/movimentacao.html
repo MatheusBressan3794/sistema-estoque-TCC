@@ -1,14 +1,73 @@
 {% extends 'alimentos/base.html' %}
-{% block title %}Movimentação{% endblock %}{% block page_label %}Movimentação{% endblock %}
-{% block content %}<section class="page-heading"><div><span class="eyebrow orange">HISTÓRICO DO ESTOQUE</span><h1>Movimentação</h1><p>Registre e acompanhe as entradas e saídas dos seus itens.</p></div></section><section class="empty-feature"><div class="empty-feature-icon"><i class="bi bi-arrow-left-right"></i></div><h2>Movimentações em um só lugar</h2><p>O histórico das suas movimentações ficará disponível aqui para facilitar o acompanhamento da rotina.</p><a href="{% url 'listar_alimentos' %}" class="btn btn-primary-custom">Ir para o estoque <i class="bi bi-arrow-right"></i></a></section>{% endblock %}<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movimentação</title>
-</head>
-<body>
-    <h1>Movimentação</h1>
-    
-</body>
-</html>
+
+{% block title %}Movimentação{% endblock %}
+
+{% block page_label %}Movimentação{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow orange">HISTÓRICO DO ESTOQUE</span>
+        <h1>Movimentação</h1>
+        <p>Registre as entradas e saídas dos seus itens.</p>
+    </div>
+</section>
+
+<section class="form-panel">
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="form-group">
+            {{ form.tipo.label_tag }}
+            {{ form.tipo }}
+            {{ form.tipo.errors }}
+        </div>
+
+        <div class="form-group">
+            {{ form.alimento.label_tag }}
+            {{ form.alimento }}
+            {{ form.alimento.errors }}
+        </div>
+
+        <div class="form-group">
+            {{ form.numero_lote.label_tag }}
+            {{ form.numero_lote }}
+            {{ form.numero_lote.errors }}
+        </div>
+
+        <div class="form-group">
+            {{ form.quantidade.label_tag }}
+            {{ form.quantidade }}
+            {{ form.quantidade.errors }}
+        </div>
+
+        <div class="form-group">
+            {{ form.data_validade.label_tag }}
+            {{ form.data_validade }}
+            {{ form.data_validade.errors }}
+        </div>
+
+        <div class="form-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-light-custom">
+                Cancelar
+            </a>
+
+            <button type="submit" class="btn btn-primary-custom">
+                <i class="bi bi-check-lg"></i>
+                Registrar movimentação
+            </button>
+        </div>
+
+    </form>
+
+</section>
+
+{% endblock %}
