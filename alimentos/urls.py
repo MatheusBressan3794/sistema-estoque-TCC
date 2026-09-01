@@ -19,7 +19,8 @@ urlpatterns = [
     path('alimentos/deletar/<int:id>/', views.deletar_alimento, name='deletar_alimento'),
 
     # Movimentação
-    path('movimentacao/', views.movimentacao, name='movimentacao'),
+    path('movimentacao/', views.movimentacao_estoque,
+        name='movimentacao_estoque'),
 
     # Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),

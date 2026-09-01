@@ -1,8 +1,9 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Alimento
+from .models import Alimento, Lote, Movimentacao
 
+#Cadastro de alimentos
 class AlimentoForm(forms.ModelForm):
     class Meta:
         model = Alimento
@@ -33,7 +34,69 @@ class AlimentoForm(forms.ModelForm):
             raise forms.ValidationError("A quantidade mínima não pode ser negativa.")
         return quantidade_minima
 
+#Movimentação do estoque (lotes)
+class MovimentacaoForm(forms.Form):
 
+    TIPO_CHOICES = [
+        ('ENTRADA', 'Entrada'),
+        ('SAIDA', 'Saída'),
+    ]
+
+    tipo = forms.ChoiceField(
+        label='Tipo de movimentação',
+        choices=TIPO_CHOICES,
+        widget=forms.Select(
+            attrs={
+                'class': 'form-control'
+            }
+        )
+    )
+
+    alimento = forms.ModelChoiceField(
+        label='Alimento',
+        queryset=Alimento.objects.all(),
+        empty_label='Selecione um alimento',
+        widget=forms.Select(
+            attrs={
+                'class': 'form-control'
+            }
+        )
+    )
+
+    numero_lote = forms.CharField(
+        label='Número do lote',
+        max_length=100,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex.: ARZ2026-001'
+            }
+        )
+    )
+
+    quantidade = forms.IntegerField(
+        label='Quantidade de embalagens',
+        min_value=1,
+        widget=forms.NumberInput(
+            attrs={
+                'class': 'form-control',
+                'min': '1',
+                'placeholder': 'Quantidade'
+            }
+        )
+    )
+
+    data_validade = forms.DateField(
+        label='Data de validade',
+        widget=forms.DateInput(
+            attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }
+        )
+    )
+
+#Criar conta
 class CriarContaForm(UserCreationForm):
     first_name = forms.CharField(
         label="Nome completo",
