@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import ProtectedError
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
@@ -25,7 +26,8 @@ def listar_alimentos(request):
 # Detalhes do alimento e seus lotes
 def detalhes_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
-    lotes = alimento.lotes.all()
+    #Mostra lotes com 1 ou mais cadastros
+    lotes = alimento.lotes.filter(quantidade_atual__gt=0).order_by('data_validade')
 
     return render(
         request,
@@ -55,14 +57,40 @@ def atualizar_alimento(request, id):
         return redirect('listar_alimentos')
     return render(request, 'alimentos/form.html', {'form': form})
 
-#Deletar alimento
+#Deletar alimento que não possui lote cadastrado
 def deletar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
+    tem_lotes = alimento.lotes.exists()
+
     if request.method == 'POST':
-        alimento.delete()
+
+        if tem_lotes:
+            messages.error(
+                request,
+                f'Não é possível excluir "{alimento.nome}" porque já existem '
+                f'lotes cadastrados para ele. Remova ou zere os lotes antes '
+                f'de excluir o alimento.'
+            )
+            return redirect('detalhes_alimento', id=alimento.id)
+
+        try:
+            alimento.delete()
+        except ProtectedError:
+            messages.error(
+                request,
+                f'Não é possível excluir "{alimento.nome}" porque existem '
+                f'lotes ou movimentações vinculados a ele.'
+            )
+            return redirect('detalhes_alimento', id=alimento.id)
+
         messages.success(request, 'Alimento removido do estoque.')
         return redirect('listar_alimentos')
-    return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento})
+
+    return render(
+        request,
+        'alimentos/confirmar_delete.html',
+        {'alimento': alimento, 'tem_lotes': tem_lotes}
+    )
 
 #Autenticação (CADASTRO E LOGIN)
 
@@ -155,7 +183,7 @@ def movimentacao_estoque(request):
                 return redirect('movimentacao_estoque')
 
             # SAÍDA
-            else:
+            elif tipo in ('SAIDA', 'DESCARTE'):
 
                 if not lote:
                     messages.error(

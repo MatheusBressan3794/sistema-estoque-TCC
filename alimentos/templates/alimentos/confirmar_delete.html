@@ -8,90 +8,74 @@ Estoque / Exclusão
 
 {% block content %}
 
-<section class="page-heading">
-
-```
-<div>
-
-    <span class="eyebrow orange">
-        ATENÇÃO
-    </span>
-
-    <h1>
-        Excluir alimento
-    </h1>
-
-    <p>
-        Esta ação não pode ser desfeita.
-    </p>
-
-</div>
-```
-
-</section>
-
 <section class="form-panel delete-panel">
 
-```
-<div class="delete-icon">
-    <i class="bi bi-trash3"></i>
-</div>
-
-
-<h2>
-    Remover {{ alimento.nome }}?
-</h2>
-
-
-<p>
-    O item será excluído permanentemente do seu estoque.
-</p>
-
-
-<div class="delete-details">
-
-    <span>
-        Embalagem
-        <strong>
-            {{ alimento.get_embalagem_display }}
-        </strong>
-    </span>
-
-
-    <span>
-        Conteúdo
-        <strong>
-            {{ alimento.quantidade_embalagem }}
-            {{ alimento.get_unidade_medida_display }}
-        </strong>
-    </span>
-
-</div>
-
-
-<form method="POST" class="form-actions">
-
-    {% csrf_token %}
-
-
-    <a
-        href="{% url 'listar_alimentos' %}"
-        class="btn btn-light-custom"
-    >
-        Cancelar
-    </a>
-
-
-    <button
-        type="submit"
-        class="btn btn-danger-custom"
-    >
+    <div class="delete-icon">
         <i class="bi bi-trash3"></i>
-        Sim, excluir
-    </button>
+    </div>
 
-</form>
-```
+    <h2>Remover {{ alimento.nome }}?</h2>
+
+    {% if tem_lotes %}
+
+        <div class="alert alert-warning" role="alert">
+            <strong>Este alimento não pode ser excluído.</strong>
+            <br>
+            Existem lotes e movimentações vinculados a ele. Um alimento só pode ser removido quando não houver nenhum lote vinculado
+        </div>
+
+    {% else %}
+
+        <p>O item será excluído permanentemente do seu estoque.</p>
+
+    {% endif %}
+
+    <div class="delete-details">
+
+        <span>
+            Embalagem
+            <strong>{{ alimento.get_embalagem_display }}</strong>
+        </span>
+
+        <span>
+            Conteúdo
+            <strong>
+                {{ alimento.quantidade_embalagem }}
+                {{ alimento.get_unidade_medida_display }}
+            </strong>
+        </span>
+
+    </div>
+
+    {% if tem_lotes %}
+
+        <div class="form-actions">
+            <a href="{% url 'detalhes_alimento' alimento.id %}" class="btn btn-light-custom">
+                Ver lotes
+            </a>
+            <a href="{% url 'listar_alimentos' %}" class="btn btn-primary-custom">
+                Voltar para o estoque
+            </a>
+        </div>
+
+    {% else %}
+
+        <form method="POST" class="form-actions">
+
+            {% csrf_token %}
+
+            <a href="{% url 'listar_alimentos' %}" class="btn btn-light-custom">
+                Cancelar
+            </a>
+
+            <button type="submit" class="btn btn-danger-custom">
+                <i class="bi bi-trash3"></i>
+                Sim, excluir
+            </button>
+
+        </form>
+
+    {% endif %}
 
 </section>
 
