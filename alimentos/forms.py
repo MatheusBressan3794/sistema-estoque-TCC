@@ -40,7 +40,6 @@ class MovimentacaoForm(forms.Form):
     TIPO_CHOICES = [
         ('ENTRADA', 'Entrada'),
         ('SAIDA', 'Saída'),
-        ('DESCARTE', 'Descarte'),
     ]
 
     tipo = forms.ChoiceField(

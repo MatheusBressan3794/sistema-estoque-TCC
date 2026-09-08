@@ -131,6 +131,8 @@ def dashboard(request):
 def relatorios(request):
     return render(request, 'alimentos/relatorios.html')
 
+
+#Movimentação de lotes
 def movimentacao_estoque(request):
 
     if request.method == 'POST':
@@ -183,7 +185,7 @@ def movimentacao_estoque(request):
                 return redirect('movimentacao_estoque')
 
             # SAÍDA
-            elif tipo in ('SAIDA', 'DESCARTE'):
+            elif tipo in ('SAIDA'):
 
                 if not lote:
                     messages.error(
