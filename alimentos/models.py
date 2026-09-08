@@ -82,7 +82,6 @@ class Movimentacao(models.Model):
     TIPOS = [
         ('ENTRADA', 'Entrada'),
         ('SAIDA', 'Saída'),
-        ('DESCARTE', 'Descarte'),
     ]
 
     lote = models.ForeignKey(
