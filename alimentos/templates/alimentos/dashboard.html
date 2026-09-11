@@ -21,6 +21,7 @@
     </a>
 </section>
 
+<!-- Cartões Principais (Estoque, Movimentações, Relatórios) -->
 <section class="summary-grid">
     <article class="metric-card metric-orange">
         <span class="metric-icon"><i class="bi bi-box-seam"></i></span>
@@ -48,6 +49,52 @@
     </article>
 </section>
 
+<!-- SEÇÃO DE PRODUTOS EM FALTA (Logo abaixo dos cartões principais) -->
+<section class="row mt-4 mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 p-4" style="background-color: #fff; border-radius: 12px;">
+            <div class="d-flex align-items-center mb-3">
+                <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-2"></i>
+                <h5 class="mb-0 fw-bold">Produtos em Falta no Estoque</h5>
+            </div>
+
+            {% if alimentos_faltantes %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nome do Alimento</th>
+                                <th>Embalagem</th>
+                                <th>Quantidade Atual</th>
+                                <th class="text-end">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in alimentos_faltantes %}
+                            <tr>
+                                <td><strong>{{ item.nome }}</strong></td>
+                                <td>{{ item.embalagem }}</td>
+                                <td><span class="badge bg-danger">0 {{ item.unidade_medida }}</span></td>
+                                <td class="text-end">
+                                    <a href="{% url 'movimentacao_estoque' %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-plus-circle"></i> Repor
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-muted py-2">
+                    <i class="bi bi-check-circle text-success me-1"></i> Nenhum produto em falta no momento. Tudo em ordem!
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Seção Inferior (Comece por aqui e Citação) -->
 <section class="dashboard-lower">
     <div class="feature-panel">
         <div class="panel-heading">

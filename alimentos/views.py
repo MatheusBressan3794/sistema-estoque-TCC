@@ -20,7 +20,7 @@ def dashboard(request):
 def relatorios(request):
     return render(request, 'alimentos/relatorios.html')
 
-#Listar os alimentos do estoque
+# Listar os alimentos do estoque
 def listar_alimentos(request):
     busca = request.GET.get('busca', '')
     alimentos = Alimento.objects.all()
@@ -40,7 +40,6 @@ def listar_alimentos(request):
 # Detalhes do alimento e seus lotes
 def detalhes_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
-    #Mostra lotes com 1 ou mais cadastros
     lotes = alimento.lotes.filter(quantidade_atual__gt=0).order_by('data_validade')
 
     return render(
@@ -52,7 +51,7 @@ def detalhes_alimento(request, id):
         }
     )
 
-#Criar alimento
+# Criar alimento
 def criar_alimento(request):
     form = AlimentoForm(request.POST or None)
     if form.is_valid():
@@ -61,7 +60,7 @@ def criar_alimento(request):
         return redirect('listar_alimentos')
     return render(request, 'alimentos/form.html', {'form': form})
 
-#Atualizar alimento
+# Atualizar alimento
 def atualizar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     form = AlimentoForm(request.POST or None, instance=alimento)
@@ -71,13 +70,12 @@ def atualizar_alimento(request, id):
         return redirect('listar_alimentos')
     return render(request, 'alimentos/form.html', {'form': form})
 
-#Deletar alimento que não possui lote cadastrado
+# Deletar alimento que não possui lote cadastrado
 def deletar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     tem_lotes = alimento.lotes.exists()
 
     if request.method == 'POST':
-
         if tem_lotes:
             messages.error(
                 request,
@@ -106,7 +104,7 @@ def deletar_alimento(request, id):
         {'alimento': alimento, 'tem_lotes': tem_lotes}
     )
 
-#Autenticação (CADASTRO E LOGIN)
+# Autenticação (CADASTRO E LOGIN)
 
 def cadastro(request):
     if request.method == 'POST':
@@ -134,34 +132,18 @@ def login_view(request):
 
     return render(request, 'alimentos/login.html', {'form': form})
 
-#Páginas em gerais e dashboard
-
-def inicio(request):
-    return render(request, 'alimentos/inicio.html')
-
-def dashboard(request):
-    return render(request, 'alimentos/dashboard.html')
-
-def relatorios(request):
-    return render(request, 'alimentos/relatorios.html')
-
-
-#Movimentação de lotes
+# Movimentação de lotes
 def movimentacao_estoque(request):
-
     if request.method == 'POST':
-
         form = MovimentacaoForm(request.POST)
 
         if form.is_valid():
-
             tipo = form.cleaned_data['tipo']
             alimento = form.cleaned_data['alimento']
             numero_lote = form.cleaned_data['numero_lote']
             quantidade = form.cleaned_data['quantidade']
             data_validade = form.cleaned_data['data_validade']
 
-            # Procura o lote daquele alimento
             lote = Lote.objects.filter(
                 alimento=alimento,
                 numero_lote=numero_lote
@@ -169,14 +151,10 @@ def movimentacao_estoque(request):
 
             # ENTRADA
             if tipo == 'ENTRADA':
-
                 if lote:
-                    # Se o lote já existe, soma a quantidade
                     lote.quantidade_atual += quantidade
                     lote.save()
-
                 else:
-                    # Se o lote não existe, cria um novo
                     lote = Lote.objects.create(
                         alimento=alimento,
                         numero_lote=numero_lote,
@@ -184,7 +162,6 @@ def movimentacao_estoque(request):
                         data_validade=data_validade
                     )
 
-                # Registra a movimentação
                 Movimentacao.objects.create(
                     lote=lote,
                     tipo=tipo,
@@ -200,13 +177,11 @@ def movimentacao_estoque(request):
 
             # SAÍDA
             elif tipo in ('SAIDA'):
-
                 if not lote:
                     messages.error(
                         request,
                         'O lote informado não existe para esse alimento.'
                     )
-
                 elif lote.quantidade_atual < quantidade:
                     messages.error(
                         request,
@@ -214,14 +189,10 @@ def movimentacao_estoque(request):
                         f'Esse lote possui apenas '
                         f'{lote.quantidade_atual} embalagens.'
                     )
-
                 else:
-
-                    # Retira a quantidade do lote
                     lote.quantidade_atual -= quantidade
                     lote.save()
 
-                    # Registra a movimentação
                     Movimentacao.objects.create(
                         lote=lote,
                         tipo=tipo,
@@ -234,9 +205,7 @@ def movimentacao_estoque(request):
                     )
 
                     return redirect('movimentacao_estoque')
-
     else:
-
         form = MovimentacaoForm()
 
     return render(
@@ -244,4 +213,13 @@ def movimentacao_estoque(request):
         'alimentos/movimentacao.html',
         {'form': form}
     )
+
+# Produtos em falta
+@login_required
+def produtos_em_falta(request):
+    alimentos_faltantes = Alimento.objects.filter(quantidade_embalagem__lte=0)
     
+    context = {
+        'alimentos_faltantes': alimentos_faltantes,
+    }
+    return render(request, 'alimentos/produtos_em_falta.html', context)

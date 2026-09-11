@@ -27,4 +27,6 @@ urlpatterns = [
 
     # Relatórios
     path('relatorios/', views.relatorios, name='relatorios'),
+    path('produtos-em-falta/', views.produtos_em_falta, name='produtos_em_falta'),
+
 ]
