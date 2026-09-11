@@ -4,8 +4,9 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Alimento, Lote, Movimentacao
-from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm
+from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimentoForm
 from django.contrib.auth.decorators import login_required
+from datetime import date, timedelta
 
 # Páginas em gerais e dashboard
 
@@ -14,7 +15,22 @@ def inicio(request):
 
 @login_required(login_url='login')
 def dashboard(request):
-    return render(request, 'alimentos/dashboard.html')
+    alimentos_faltantes = Alimento.objects.filter(quantidade_embalagem__lte=0)
+    
+    # Lotes próximos do vencimento (próximos 15 dias)
+    hoje = date.today()
+    limite_vencimento = hoje + timedelta(days=15)
+    lotes_proximos_vencimento = Lote.objects.filter(
+        data_validade__gte=hoje,
+        data_validade__lte=limite_vencimento,
+        quantidade_atual__gt=0
+    ).order_by('data_validade')
+
+    context = {
+        'alimentos_faltantes': alimentos_faltantes,
+        'lotes_proximos_vencimento': lotes_proximos_vencimento,
+    }
+    return render(request, 'alimentos/dashboard.html', context)
 
 @login_required(login_url='login')
 def relatorios(request):
@@ -51,16 +67,40 @@ def detalhes_alimento(request, id):
         }
     )
 
-# Criar alimento
+# Criar alimento (AGORA COM LOTE OBRIGATÓRIO)
 def criar_alimento(request):
-    form = AlimentoForm(request.POST or None)
+    form = CriarAlimentoForm(request.POST or None)
+    
     if form.is_valid():
-        form.save()
-        messages.success(request, 'Alimento cadastrado com sucesso!')
+        # 1. Salva o alimento no banco
+        alimento = form.save()
+        
+        # 2. Pega os dados do lote que o usuário digitou
+        numero_lote = form.cleaned_data['numero_lote']
+        data_validade = form.cleaned_data['data_validade']
+        quantidade_inicial = form.cleaned_data['quantidade_inicial']
+        
+        # 3. Cria o lote automaticamente vinculado ao alimento
+        lote = Lote.objects.create(
+            alimento=alimento,
+            numero_lote=numero_lote,
+            quantidade_atual=quantidade_inicial,
+            data_validade=data_validade
+        )
+        
+        # 4. Registra a movimentação de ENTRADA para o histórico
+        Movimentacao.objects.create(
+            lote=lote,
+            tipo='ENTRADA',
+            quantidade=quantidade_inicial
+        )
+        
+        messages.success(request, 'Alimento e Lote Inicial cadastrados com sucesso!')
         return redirect('listar_alimentos')
+        
     return render(request, 'alimentos/form.html', {'form': form})
 
-# Atualizar alimento
+# Atualizar alimento (Mantém o form antigo para não exigir lote na edição)
 def atualizar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     form = AlimentoForm(request.POST or None, instance=alimento)

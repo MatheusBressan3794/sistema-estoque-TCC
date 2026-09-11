@@ -44,7 +44,6 @@ Estoque / Cadastro
 
     {% csrf_token %}
 
-
     {% if form.non_field_errors %}
 
         <div class="alert alert-danger">
@@ -53,27 +52,35 @@ Estoque / Cadastro
 
     {% endif %}
 
-
     <div class="row g-4">
 
         {% for field in form %}
 
-            <div class="col-md-{% if field.name == 'nome' %}12{% else %}6{% endif %}">
+            <!-- SEPARADOR PARA OS DADOS DO LOTE (Só aparece na tela de criação) -->
+            {% if field.name == 'numero_lote' %}
+                <div class="col-12 mt-4 mb-0">
+                    <hr style="border-color: #eee; margin-bottom: 1.5rem;">
+                    <h6 class="text-muted fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                        <i class="bi bi-box-seam me-1"></i> Dados do Lote Inicial (Obrigatório)
+                    </h6>
+                </div>
+            {% endif %}
+
+            <!-- LÓGICA DE COLUNAS: Nome = 12 col, Lote = 4 col, Resto = 6 col -->
+            <div class="col-md-{% if field.name == 'nome' %}12{% elif field.name == 'numero_lote' or field.name == 'data_validade' or field.name == 'quantidade_inicial' %}4{% else %}6{% endif %}">
 
                 <label
-                    class="form-label"
+                    class="form-label {% if field.name == 'numero_lote' or field.name == 'data_validade' or field.name == 'quantidade_inicial' %}small text-muted fw-bold{% endif %}"
                     for="{{ field.id_for_label }}"
                 >
                     {{ field.label }}
                 </label>
 
-
                 {{ field }}
-
 
                 {% for error in field.errors %}
 
-                    <div class="field-error">
+                    <div class="field-error text-danger small mt-1">
                         {{ error }}
                     </div>
 
@@ -85,8 +92,7 @@ Estoque / Cadastro
 
     </div>
 
-
-    <div class="form-actions">
+    <div class="form-actions mt-5">
 
         <a
             href="{% url 'listar_alimentos' %}"
@@ -94,7 +100,6 @@ Estoque / Cadastro
         >
             Cancelar
         </a>
-
 
         <button
             type="submit"
