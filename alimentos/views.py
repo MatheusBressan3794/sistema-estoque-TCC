@@ -5,6 +5,20 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Alimento, Lote, Movimentacao
 from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm
+from django.contrib.auth.decorators import login_required
+
+# Páginas em gerais e dashboard
+
+def inicio(request):
+    return render(request, 'alimentos/inicio.html')
+
+@login_required(login_url='login')
+def dashboard(request):
+    return render(request, 'alimentos/dashboard.html')
+
+@login_required(login_url='login')
+def relatorios(request):
+    return render(request, 'alimentos/relatorios.html')
 
 #Listar os alimentos do estoque
 def listar_alimentos(request):
@@ -230,3 +244,4 @@ def movimentacao_estoque(request):
         'alimentos/movimentacao.html',
         {'form': form}
     )
+    
