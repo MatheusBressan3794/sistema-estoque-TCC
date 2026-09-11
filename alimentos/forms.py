@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Alimento, Lote, Movimentacao
 
-#Cadastro de alimentos
+# Cadastro de alimentos (Usado para Edição)
 class AlimentoForm(forms.ModelForm):
     class Meta:
         model = Alimento
@@ -15,9 +15,14 @@ class AlimentoForm(forms.ModelForm):
             'quantidade_minima',
             'tipo_uso'
         ]
+        # Aqui estão os labels alterados para facilitar o entendimento
+        labels = {
+            'quantidade_embalagem': 'Tamanho da embalagem (Peso/Volume)',
+            'quantidade_minima': 'Estoque mínimo de alerta',
+        }
         widgets = {
-            'quantidade_embalagem': forms.NumberInput(attrs={'min': '0', 'step': 'any', 'class': 'form-control'}),
-            'quantidade_minima': forms.NumberInput(attrs={'min': '0', 'class': 'form-control'}),
+            'quantidade_embalagem': forms.NumberInput(attrs={'min': '0', 'step': 'any', 'class': 'form-control', 'placeholder': 'Ex: 5, 300...'}),
+            'quantidade_minima': forms.NumberInput(attrs={'min': '0', 'class': 'form-control', 'placeholder': 'Ex: 10'}),
         }
 
     # Validação para impedir valores menores que zero na quantidade da embalagem
@@ -34,9 +39,44 @@ class AlimentoForm(forms.ModelForm):
             raise forms.ValidationError("A quantidade mínima não pode ser negativa.")
         return quantidade_minima
 
-#Movimentação do estoque (lotes)
-class MovimentacaoForm(forms.Form):
+# Cadastro Inicial de Alimento (Exige o Lote junto)
+class CriarAlimentoForm(AlimentoForm):
+    numero_lote = forms.CharField(
+        label='Número do lote',
+        max_length=100,
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex.: LOTE-001'
+            }
+        )
+    )
+    data_validade = forms.DateField(
+        label='Data de validade',
+        required=True,
+        widget=forms.DateInput(
+            attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }
+        )
+    )
+    quantidade_inicial = forms.IntegerField(
+        label='Qtd. de embalagens neste lote',  # Aqui mudamos o nome do segundo campo
+        min_value=1,
+        required=True,
+        widget=forms.NumberInput(
+            attrs={
+                'class': 'form-control',
+                'min': '1',
+                'placeholder': 'Quantas unidades vieram?'
+            }
+        )
+    )
 
+# Movimentação do estoque (lotes)
+class MovimentacaoForm(forms.Form):
     TIPO_CHOICES = [
         ('ENTRADA', 'Entrada'),
         ('SAIDA', 'Saída'),
@@ -96,7 +136,7 @@ class MovimentacaoForm(forms.Form):
         )
     )
 
-#Criar conta
+# Criar conta
 class CriarContaForm(UserCreationForm):
     first_name = forms.CharField(
         label="Nome completo",

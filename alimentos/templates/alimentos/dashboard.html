@@ -2,6 +2,16 @@
 {% block title %}Visão geral{% endblock %}
 {% block page_label %}Visão geral{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Remove qualquer desenho decorativo dos cantos do painel */
+    .dashboard-lower .quote-panel::before,
+    .dashboard-lower .quote-panel::after {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="page-heading">
     <div>
@@ -49,7 +59,7 @@
     </article>
 </section>
 
-<!-- SEÇÃO DE PRODUTOS EM FALTA (Logo abaixo dos cartões principais) -->
+<!-- SEÇÃO DE PRODUTOS EM FALTA -->
 <section class="row mt-4 mb-4">
     <div class="col-12">
         <div class="card shadow-sm border-0 p-4" style="background-color: #fff; border-radius: 12px;">
@@ -94,8 +104,48 @@
     </div>
 </section>
 
-<!-- Seção Inferior (Comece por aqui e Citação) -->
+<!-- Seção Inferior (Vencimento Próximo e Comece por aqui) -->
 <section class="dashboard-lower">
+    <!-- Painel Verde: Alerta de Validade (15 dias) - Cor sólida e sem desenhos -->
+    <div class="quote-panel" style="background-color: #eaf4ed !important; background-image: none !important; border: none !important; border-left: none !important;">
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-calendar-exclamation text-success fs-4 me-2"></i>
+            <h5 class="mb-0 fw-bold text-success">Vencimento Próximo (15 dias)</h5>
+        </div>
+
+        {% if lotes_proximos_vencimento %}
+            <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+                <table class="table table-sm table-hover align-middle mb-0 bg-white rounded">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Alimento</th>
+                            <th>Lote</th>
+                            <th>Validade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lote in lotes_proximos_vencimento %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'detalhes_alimento' lote.alimento.id %}" class="text-decoration-none fw-bold text-dark">
+                                    {{ lote.alimento.nome }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ lote.numero_lote }}</span></td>
+                            <td><span class="text-danger fw-bold">{{ lote.data_validade|date:"d/m/Y" }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-muted py-3">
+                <i class="bi bi-check-circle text-success me-1"></i> Nenhum lote próximo ao vencimento nos próximos 15 dias.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Painel Branco: Comece por aqui -->
     <div class="feature-panel">
         <div class="panel-heading">
             <div>
@@ -130,12 +180,6 @@
                 <i class="bi bi-arrow-up-right"></i>
             </a>
         </div>
-    </div>
-    
-    <div class="quote-panel">
-        <i class="bi bi-quote"></i>
-        <p>“Pequenos controles diários fazem uma grande diferença no fim do mês.”</p>
-        <span>— organização que funciona</span>
     </div>
 </section>
 {% endblock %}
