@@ -1,0 +1,96 @@
+{% extends 'alimentos/base.html' %}
+
+{% block title %}{{ titulo }}{% endblock %}
+{% block page_label %}Relatórios / {{ titulo }}{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow orange">RELATÓRIO</span>
+        <h1>{{ titulo }}</h1>
+        <p>Consulte as movimentações de {{ singular }} por período.</p>
+    </div>
+    <a href="{% url 'relatorios' %}" class="btn btn-light-custom">
+        <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+</section>
+
+<section class="data-panel">
+
+    <form method="GET" class="row g-3 align-items-end mb-4">
+
+        <div class="col-auto">
+            <label for="id_data_inicio" class="form-label">De</label>
+            <input type="date" class="form-control" id="id_data_inicio"
+                   name="data_inicio" value="{{ data_inicio|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-auto">
+            <label for="id_data_fim" class="form-label">Até</label>
+            <input type="date" class="form-control" id="id_data_fim"
+                   name="data_fim" value="{{ data_fim|date:'Y-m-d' }}">
+        </div>
+
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary-custom">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </div>
+
+        <div class="col-auto ms-auto">
+            <span class="result-count">
+                {{ movimentacoes|length }} registro{{ movimentacoes|length|pluralize }}
+            </span>
+        </div>
+
+    </form>
+
+    <div class="table-responsive">
+        <table class="table">
+
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Alimento</th>
+                    <th>Lote</th>
+                    <th class="text-end">Quantidade</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for mov in movimentacoes %}
+                <tr>
+                    <td>{{ mov.data_movimentacao|date:"d/m/Y" }}</td>
+                    <td>{{ mov.lote.alimento.nome }}</td>
+                    <td>{{ mov.lote.numero_lote }}</td>
+                    <td class="text-end">{{ mov.quantidade }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <strong>Nenhuma movimentação encontrada</strong>
+                        <span>Ajuste o período ou registre uma nova movimentação.</span>
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+            {% if movimentacoes %}
+            <tfoot>
+                <tr>
+                    <th colspan="3" class="text-end">Total</th>
+                    <th class="text-end">{{ total_quantidade }}</th>
+                </tr>
+            </tfoot>
+            {% endif %}
+
+        </table>
+    </div>
+
+</section>
+
+{% endblock %}
