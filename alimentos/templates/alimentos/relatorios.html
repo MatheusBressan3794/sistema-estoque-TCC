@@ -1,14 +1,50 @@
 {% extends 'alimentos/base.html' %}
-{% block title %}Relatórios{% endblock %}{% block page_label %}Relatórios{% endblock %}
-{% block content %}<section class="page-heading"><div><span class="eyebrow orange">INSIGHTS DO ESTOQUE</span><h1>Relatórios</h1><p>Transforme os dados do seu estoque em decisões melhores.</p></div></section><section class="empty-feature report-feature"><div class="empty-feature-icon green"><i class="bi bi-bar-chart-line"></i></div><h2>Seus relatórios começam aqui</h2><p>Assim que houver movimentações registradas, você poderá acompanhar a evolução do estoque por aqui.</p><a href="{% url 'movimentacao_estoque' %}" class="btn btn-secondary-custom">Ver movimentação <i class="bi bi-arrow-right"></i></a></section>{% endblock %}<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Relatórios</title>
-</head>
-<body>
-    <h1>Relatórios</h1>
-    
-</body>
-</html>
+{% block title %}Relatórios{% endblock %}
+{% block page_label %}Relatórios{% endblock %}
+
+{% block content %}
+
+<section class="page-heading">
+    <div>
+        <span class="eyebrow orange">INSIGHTS DO ESTOQUE</span>
+        <h1>Relatórios</h1>
+        <p>Consulte as movimentações registradas no estoque.</p>
+    </div>
+    <a href="{% url 'movimentacao_estoque' %}" class="btn btn-primary-custom">
+        <i class="bi bi-plus-lg"></i> Registrar movimentação
+    </a>
+</section>
+
+<section class="dashboard-lower">
+    <div class="feature-panel">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">ESCOLHA O RELATÓRIO</span>
+                <h2>O que você quer consultar?</h2>
+            </div>
+            <i class="bi bi-bar-chart-line panel-symbol"></i>
+        </div>
+        <div class="quick-actions">
+
+            <a href="{% url 'relatorio_movimentacoes' 'entradas' %}">
+                <span><i class="bi bi-box-arrow-in-down"></i></span>
+                <div>
+                    <strong>Entradas</strong>
+                    <small>Veja o que chegou no estoque</small>
+                </div>
+                <i class="bi bi-arrow-up-right"></i>
+            </a>
+
+            <a href="{% url 'relatorio_movimentacoes' 'saidas' %}">
+                <span><i class="bi bi-box-arrow-up"></i></span>
+                <div>
+                    <strong>Saídas</strong>
+                    <small>Veja o que foi usado no dia a dia</small>
+                </div>
+                <i class="bi bi-arrow-up-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

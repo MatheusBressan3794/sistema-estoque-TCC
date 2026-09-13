@@ -7,6 +7,10 @@ from .models import Alimento, Lote, Movimentacao
 from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimentoForm
 from django.contrib.auth.decorators import login_required
 from datetime import date, timedelta
+from datetime import date
+from django.db.models import Sum
+from django.http import Http404
+from django.utils import timezone
 
 # Páginas em gerais e dashboard
 
@@ -31,10 +35,6 @@ def dashboard(request):
         'lotes_proximos_vencimento': lotes_proximos_vencimento,
     }
     return render(request, 'alimentos/dashboard.html', context)
-
-@login_required(login_url='login')
-def relatorios(request):
-    return render(request, 'alimentos/relatorios.html')
 
 # Listar os alimentos do estoque
 def listar_alimentos(request):
@@ -263,3 +263,56 @@ def produtos_em_falta(request):
         'alimentos_faltantes': alimentos_faltantes,
     }
     return render(request, 'alimentos/produtos_em_falta.html', context)
+
+
+@login_required(login_url='login')
+def relatorios(request):
+    return render(request, 'alimentos/relatorios.html')
+
+#Relatório de movimentações (entradas ou saídas), filtrável por data
+def relatorio_movimentacoes(request, tipo):
+
+    tipos_validos = {
+        'entradas': ('ENTRADA', 'Entradas', 'entrada'),
+        'saidas': ('SAIDA', 'Saídas', 'saída'),
+    }
+
+    if tipo not in tipos_validos:
+        raise Http404('Tipo de relatório inválido.')
+
+    tipo_valor, titulo, singular = tipos_validos[tipo]
+    hoje = timezone.localdate()
+
+    # Se a data vier vazia ou inválida no GET, cai no padrão: hoje
+    try:
+        data_inicio = date.fromisoformat(request.GET.get('data_inicio', ''))
+    except ValueError:
+        data_inicio = hoje
+
+    try:
+        data_fim = date.fromisoformat(request.GET.get('data_fim', ''))
+    except ValueError:
+        data_fim = hoje
+
+    movimentacoes = (
+        Movimentacao.objects
+        .filter(tipo=tipo_valor, data_movimentacao__range=(data_inicio, data_fim))
+        .select_related('lote', 'lote__alimento')
+        .order_by('-data_movimentacao', 'lote__alimento__nome')
+    )
+
+    total_quantidade = movimentacoes.aggregate(total=Sum('quantidade'))['total'] or 0
+
+    return render(
+        request,
+        'alimentos/relatorio_movimentacoes.html',
+        {
+            'tipo': tipo,
+            'titulo': titulo,
+            'singular': singular,
+            'movimentacoes': movimentacoes,
+            'data_inicio': data_inicio,
+            'data_fim': data_fim,
+            'total_quantidade': total_quantidade,
+        }
+    )
