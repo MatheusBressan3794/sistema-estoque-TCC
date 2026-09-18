@@ -21,18 +21,19 @@ def inicio(request):
 def dashboard(request):
     alimentos_faltantes = Alimento.objects.filter(quantidade_embalagem__lte=0)
     
-    # Lotes próximos do vencimento (próximos 15 dias)
+    # Lotes vencidos OU próximos do vencimento (próximos 15 dias)
     hoje = date.today()
     limite_vencimento = hoje + timedelta(days=15)
+    
     lotes_proximos_vencimento = Lote.objects.filter(
-        data_validade__gte=hoje,
-        data_validade__lte=limite_vencimento,
+        data_validade__lte=limite_vencimento, # Removemos o data_validade__gte=hoje daqui
         quantidade_atual__gt=0
     ).order_by('data_validade')
 
     context = {
         'alimentos_faltantes': alimentos_faltantes,
         'lotes_proximos_vencimento': lotes_proximos_vencimento,
+        'hoje': hoje, # Adicionamos o "hoje" aqui para o HTML conseguir usar
     }
     return render(request, 'alimentos/dashboard.html', context)
 

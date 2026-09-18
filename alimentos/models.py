@@ -54,6 +54,13 @@ class Alimento(models.Model):
 
     def __str__(self):
         return self.nome
+        
+    # AQUI ESTÁ O CÁLCULO, AGORA NO LUGAR CERTO!
+    @property
+    def quantidade_total(self):
+        # Soma a 'quantidade_atual' de todos os lotes vinculados a este alimento
+        total = sum(lote.quantidade_atual for lote in self.lotes.all())
+        return total if total else 0
     
 
 class Lote(models.Model):
