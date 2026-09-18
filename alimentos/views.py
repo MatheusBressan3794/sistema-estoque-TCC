@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
 from .models import Alimento, Lote, Movimentacao
-from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimentoForm
+from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimentoForm, LoteForm
 from django.contrib.auth.decorators import login_required
 from datetime import date, timedelta
 from datetime import date
@@ -67,6 +67,16 @@ def detalhes_alimento(request, id):
             'lotes': lotes
         }
     )
+
+#Editar lote (número do lote, quantidade e validade)
+def editar_lote(request, id):
+    lote = get_object_or_404(Lote, id=id)
+    form = LoteForm(request.POST or None, instance=lote)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Lote atualizado com sucesso!')
+        return redirect('detalhes_alimento', id=lote.alimento.id)
+    return render(request, 'alimentos/lote_form.html', {'form': form, 'lote': lote})
 
 # Criar alimento (AGORA COM LOTE OBRIGATÓRIO)
 def criar_alimento(request):
