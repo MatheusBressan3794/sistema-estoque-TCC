@@ -74,6 +74,25 @@ class CriarAlimentoForm(AlimentoForm):
             }
         )
     )
+    
+#Editar lote
+class LoteForm(forms.ModelForm):
+    class Meta:
+        model = Lote
+        fields = ['numero_lote', 'quantidade_atual', 'data_validade']
+        widgets = {
+            'numero_lote': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantidade_atual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    # Validação para impedir quantidade negativa
+    def clean_quantidade_atual(self):
+        quantidade = self.cleaned_data.get('quantidade_atual')
+        if quantidade is not None and quantidade < 0:
+            raise forms.ValidationError("A quantidade não pode ser negativa.")
+        return quantidade
+
 
 # Movimentação do estoque (lotes)
 class MovimentacaoForm(forms.Form):

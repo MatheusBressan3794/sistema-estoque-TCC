@@ -21,6 +21,9 @@ urlpatterns = [
     #Ver lotes do alimento
     path('alimentos/<int:id>/', views.detalhes_alimento,       name='detalhes_alimento'),
 
+    #Editar lotes
+    path('lotes/editar/<int:id>/', views.editar_lote, name='editar_lote'),
+
     # Movimentação
     path('movimentacao/', views.movimentacao_estoque,
         name='movimentacao_estoque'),

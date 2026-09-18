@@ -53,6 +53,7 @@
                         <th>Lote</th>
                         <th>Quantidade</th>
                         <th>Validade</th>
+                        <th class="text-end">Ações</th>
                     </tr>
                 </thead>
 
@@ -71,6 +72,12 @@
 
                             <td>
                                 {{ lote.data_validade|date:"d/m/Y" }}
+                            </td>
+
+                            <td class="text-end">
+                                <a class="table-action" href="{% url 'editar_lote' lote.id %}" aria-label="Editar lote {{ lote.numero_lote }}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
                             </td>
                         </tr>
 
