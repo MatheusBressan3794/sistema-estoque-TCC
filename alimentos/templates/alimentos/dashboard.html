@@ -2,16 +2,6 @@
 {% block title %}Visão geral{% endblock %}
 {% block page_label %}Visão geral{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Remove qualquer desenho decorativo dos cantos do painel */
-    .dashboard-lower .quote-panel::before,
-    .dashboard-lower .quote-panel::after {
-        display: none !important;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
 <section class="page-heading">
     <div>
@@ -106,11 +96,11 @@
 
 <!-- Seção Inferior (Vencimento Próximo e Comece por aqui) -->
 <section class="dashboard-lower">
-    <!-- Painel Verde: Alerta de Validade (15 dias) - Cor sólida e sem desenhos -->
-    <div class="quote-panel" style="background-color: #eaf4ed !important; background-image: none !important; border: none !important; border-left: none !important;">
+    <!-- Painel com o quadrado verde clarinho de fundo que você circulou -->
+    <div class="quote-panel" style="background-color: #eaf4ed !important;">
         <div class="d-flex align-items-center mb-3">
             <i class="bi bi-calendar-exclamation text-success fs-4 me-2"></i>
-            <h5 class="mb-0 fw-bold text-success">Vencimento Próximo (15 dias)</h5>
+            <h5 class="mb-0 fw-bold text-success">Lotes Vencidos ou a Vencer (15 dias)</h5>
         </div>
 
         {% if lotes_proximos_vencimento %}
@@ -125,14 +115,43 @@
                     </thead>
                     <tbody>
                         {% for lote in lotes_proximos_vencimento %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'detalhes_alimento' lote.alimento.id %}" class="text-decoration-none fw-bold text-dark">
+                        <tr class="align-middle">
+                            <!-- Alimento -->
+                            <td class="py-3">
+                                <a href="{% url 'detalhes_alimento' lote.alimento.id %}" class="text-decoration-none fw-bold {% if lote.data_validade < hoje %}text-danger{% else %}text-dark{% endif %}">
                                     {{ lote.alimento.nome }}
                                 </a>
                             </td>
-                            <td><span class="badge bg-secondary">{{ lote.numero_lote }}</span></td>
-                            <td><span class="text-danger fw-bold">{{ lote.data_validade|date:"d/m/Y" }}</span></td>
+                            
+                            <!-- Lote com o estilo de pílula da imagem -->
+                            <td class="py-3">
+                                {% if lote.data_validade < hoje %}
+                                    <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3 py-2 fw-semibold border border-danger border-opacity-25 shadow-sm">
+                                        {{ lote.numero_lote }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge rounded-pill bg-light text-dark px-3 py-2 fw-semibold border shadow-sm">
+                                        {{ lote.numero_lote }}
+                                    </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Validade idêntica à imagem -->
+                            <td class="py-3">
+                                {% if lote.data_validade < hoje %}
+                                    <span class="badge rounded-pill bg-danger text-white px-3 py-2 fw-bold shadow-sm">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i> {{ lote.data_validade|date:"d/m/Y" }} (Vencido)
+                                    </span>
+                                {% elif lote.data_validade == hoje %}
+                                    <span class="badge rounded-pill text-dark px-3 py-2 fw-bold shadow-sm" style="background-color: #fbbf24;">
+                                        <i class="bi bi-exclamation-triangle-fill me-1"></i> Vence Hoje
+                                    </span>
+                                {% else %}
+                                    <span class="text-secondary fw-semibold">
+                                        {{ lote.data_validade|date:"d/m/Y" }}
+                                    </span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -140,7 +159,7 @@
             </div>
         {% else %}
             <div class="text-muted py-3">
-                <i class="bi bi-check-circle text-success me-1"></i> Nenhum lote próximo ao vencimento nos próximos 15 dias.
+                <i class="bi bi-check-circle text-success me-1"></i> Nenhum lote vencido ou próximo ao vencimento.
             </div>
         {% endif %}
     </div>

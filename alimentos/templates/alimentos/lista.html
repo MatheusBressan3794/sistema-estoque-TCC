@@ -67,7 +67,7 @@
                 <th>Alimento</th>
                 <th>Embalagem</th>
                 <th>Conteúdo</th>
-                <th>Qtd. mínima</th>
+                <th>Qtd. Total</th>
                 <th>Tipo de uso</th>
                 <th class="text-end">Ações</th>
             </tr>
@@ -112,9 +112,9 @@
                 </td>
 
 
-                <!-- Quantidade mínima -->
+                <!-- Quantidade Total (Aqui foi feita a alteração!) -->
                 <td>
-                    {{ alimento.quantidade_minima }}
+                    {{ alimento.quantidade_total }}
                     {{ alimento.get_embalagem_display}}s
                 </td>
 
