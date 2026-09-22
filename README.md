@@ -9,18 +9,18 @@ cd sistema-estoque-TCC
 
 ## 2. Configurar o Ambiente Virtual (Python)
 
-Crie e ative um ambiente virtual para isolar as dependências do projeto:
+Crie e ative um ambiente virtual para isolar as dependências do projeto antes de instalar os pacotes:
 
 * **No Windows (CMD / PowerShell):**
 
 ```bash
-python -m venv venv
+py -m venv venv
 venv\Scripts\activate
 ```
 
 ## 3. Instalar as Dependências
 
-Com o ambiente virtual ativo, instale todas as bibliotecas necessárias:
+Com o ambiente virtual criado e ativo, instale todas as bibliotecas necessárias:
 
 ```bash
 pip install -r requirements.txt
@@ -64,9 +64,8 @@ Por fim, execute o servidor local do Django:
 python manage.py runserver
 ```
 
----
-
 ## 👨‍💻 Autores
+
 * Rhuan Rafael Milares Alvarinho
 * Matheus Bressan Vila Nova
 * Yasmim Santos Vieira
