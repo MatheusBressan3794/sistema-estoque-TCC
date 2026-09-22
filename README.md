@@ -34,22 +34,22 @@ Abra o terminal e clone o projeto para a sua máquina:
 git clone <url-do-seu-repositorio-git>
 cd sistema-estoque-TCC
 
-No Windows (CMD / PowerShell):
+### 2. Configurar o Ambiente Virtual (Python)
+Crie e ative um ambiente virtual para isolar as dependências do projeto:
 
-Bash
-python -m venv venv
-venv\Scripts\activate
+* **No Windows (CMD / PowerShell):**
+  ```bash
+  python -m venv venv
+  venv\Scripts\activate
 
-Instalar as Dependências
+  ### 3. Instalar as Dependências
 Com o ambiente virtual ativo, instale todas as bibliotecas necessárias:
-
-Bash
+```bash
 pip install -r requirements.txt
 
-Configurar as Variáveis de Ambiente (.env)
-Na raiz do projeto (na mesma pasta onde está o manage.py), crie um ficheiro chamado .env e cole as seguintes configurações de acesso:
-
-Snippet de código
+### 4. Configurar as Variáveis de Ambiente (`.env`)
+Na raiz do projeto (na mesma pasta onde está o `manage.py`), crie um ficheiro chamado **`.env`** e cole as seguintes configurações de acesso:
+```env
 DEBUG=True
 SECRET_KEY=django-insecure-sua-chave-secreta-aqui
 DB_NAME=stock_guardians_db
@@ -58,28 +58,32 @@ DB_PASSWORD=senha_segura_123
 DB_HOST=localhost
 DB_PORT=5433
 
-Iniciar a Base de Dados via Docker
+### Passo 5:
+```markdown
+### 5. Iniciar a Base de Dados via Docker
 Suba o contentor do PostgreSQL configurado no Docker Compose:
-
-Bash
+```bash
 docker-compose up -d
 
-Executar as Migrações do Django
+### Passo 6:
+```markdown
+### 6. Executar as Migrações do Django
 Crie as tabelas estruturadas na base de dados PostgreSQL:
-
-Bash
+```bash
 python manage.py migrate
 
-Iniciar o Servidor de Desenvolvimento
+### Passo 7 e Autores (Finalização):
+```markdown
+### 7. Iniciar o Servidor de Desenvolvimento
 Por fim, execute o servidor local do Django:
-
-Bash
+```bash
 python manage.py runserver
-Aceda ao sistema através do browser no endereço: http://127.0.0.1:8000/
 
-Autores
-Rhuan Rafael Milares Alvarinho
-Matheus Bressan Vila Nova
-Yasmim Santos Vieira
+---
 
-Projeto: TCC - Stock Guardians
+## 👨‍💻 Autores
+* Rhuan Rafael Milares Alvarinho
+* Matheus Bressan Vila Nova
+* Yasmim Santos Vieira
+
+**Projeto:** TCC - Stock Guardians
