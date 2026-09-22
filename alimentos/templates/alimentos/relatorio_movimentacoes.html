@@ -38,6 +38,13 @@
             </button>
         </div>
 
+        <!-- Botão para Baixar o PDF filtrado -->
+        <div class="col-auto">
+            <a href="{% url 'exportar_pdf_movimentacoes' tipo %}?data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}" class="btn btn-secondary" target="_blank">
+                <i class="bi bi-file-earmark-pdf"></i> Baixar PDF
+            </a>
+        </div>
+
         <div class="col-auto ms-auto">
             <span class="result-count">
                 {{ movimentacoes|length }} registro{{ movimentacoes|length|pluralize }}
