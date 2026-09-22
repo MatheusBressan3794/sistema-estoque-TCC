@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_stock_guardians
+    restart: always
+    environment:
+      POSTGRES_DB: stock_guardians_db
+      POSTGRES_USER: admin_estoque
+      POSTGRES_PASSWORD: senha_segura_123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data_v3:/var/lib/postgresql/data
+
+volumes:
+  postgres_data_v3:

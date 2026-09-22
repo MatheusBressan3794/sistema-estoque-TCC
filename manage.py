@@ -2,6 +2,17 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import sqlite3
+
+os.environ["PYTHONUTF8"] = "1"
+
+# Decodifica corretamente os caracteres antigos do SQLite (como ç em latin1)
+old_connect = sqlite3.connect
+def new_connect(*args, **kwargs):
+    conn = old_connect(*args, **kwargs)
+    conn.text_factory = lambda b: b.decode('latin1', errors='replace')
+    return conn
+sqlite3.connect = new_connect
 
 
 def main():
