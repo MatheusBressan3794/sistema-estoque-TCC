@@ -1,184 +1,85 @@
-# Stock Guardians
+# 🛡️ Stock Guardians
 
-> Sistema web para gerenciamento de estoque de alimentos.
-
-O **Stock Guardians** é uma aplicação desenvolvida para tornar o controle de alimentos mais simples, organizado e acessível. O sistema reúne o cadastro dos itens, o acompanhamento do estoque e a estrutura para registrar movimentações e consultar relatórios em uma interface moderna e responsiva.
-
-A proposta é oferecer uma visão clara da despensa e ajudar no acompanhamento da quantidade e da validade dos alimentos, reduzindo esquecimentos e facilitando a rotina de gerenciamento.
-
-## Funcionalidades
-
-- Tela inicial de apresentação do sistema.
-- Acesso e cadastro de usuários.
-- Dashboard com visão geral do sistema.
-- Cadastro de alimentos.
-- Edição de alimentos cadastrados.
-- Exclusão de alimentos com confirmação.
-- Pesquisa de alimentos por nome.
-- Visualização da quantidade disponível.
-- Exibição da data de validade.
-- Identificação visual do status do estoque.
-- Área de movimentações.
-- Área de relatórios.
-- Layout responsivo para computador, tablet e celular.
-- Interface personalizada com componentes reutilizáveis.
-
-## Tecnologias utilizadas
-
-### Back-end
-
-- Python
-- Django
-- SQLite
-
-### Front-end
-
-- HTML5
-- CSS3
-- Bootstrap 5
-- JavaScript
-- Bootstrap Icons
-- Django Templates
-
-O projeto utiliza o sistema de templates do Django e mantém a separação entre a camada visual e a lógica da aplicação. Não utiliza React, Vue ou Angular.
-
-## Organização do projeto
-
-```text
-sistema-estoque-TCC/
-├── alimentos/
-│   ├── migrations/
-│   ├── static/alimentos/
-│   │   ├── css/
-│   │   └── js/
-│   ├── templates/alimentos/
-│   │   ├── partials/
-│   │   ├── base.html
-│   │   ├── dashboard.html
-│   │   ├── form.html
-│   │   ├── inicio.html
-│   │   └── lista.html
-│   ├── forms.py
-│   ├── models.py
-│   ├── urls.py
-│   └── views.py
-├── controle_estoque/
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── db.sqlite3
-├── manage.py
-└── README.md
-```
-
-## Identidade visual
-
-A interface foi criada com uma identidade visual inspirada em organização, praticidade e controle:
-
-- **Laranja:** ações principais, destaques e atenção.
-- **Verde:** disponibilidade, sucesso e informações positivas.
-- **Branco:** áreas principais, cards e conteúdo.
-- **Cinza claro:** divisões, fundos e elementos secundários.
-
-O layout conta com sidebar responsiva, navegação superior, cards, badges, tabela moderna, formulários personalizados e estados vazios para melhorar a experiência de uso.
-
-## Como executar o projeto
-
-### Pré-requisitos
-
-- Python 3.10 ou superior.
-- Git.
-
-### 1. Clone o repositório
-
-```bash
-git clone https://github.com/MatheusBressan3794/sistema-estoque-TCC.git
-cd sistema-estoque-TCC
-```
-
-### 2. Crie um ambiente virtual
-
-No Windows:
-
-```bash
-py -m venv venv
-venv\Scripts\activate
-```
-
-No Linux ou macOS:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Instale o Django
-
-```bash
-pip install django
-```
-
-### 4. Execute as migrações
-
-```bash
-python manage.py migrate
-```
-
-No Windows, também é possível utilizar:
-
-```bash
-py manage.py migrate
-```
-
-### 5. Inicie o servidor
-
-```bash
-python manage.py runserver
-```
-
-Acesse no navegador:
-
-```text
-http://127.0.0.1:8000/
-```
-
-## Rotas principais
-
-| Página | Rota |
-|---|---|
-| Início | `/` |
-| Login | `/login/` |
-| Cadastro | `/cadastro/` |
-| Dashboard | `/dashboard/` |
-| Estoque | `/alimentos/` |
-| Novo alimento | `/alimentos/criar/` |
-| Movimentação | `/movimentacao/` |
-| Relatórios | `/relatorios/` |
-
-## Desenvolvedores
-
-Este projeto foi desenvolvido por:
-
-### Rhuan Alvarinho
-
-Desenvolvedor do projeto e integrante responsável pela construção e evolução do sistema de gerenciamento de estoque.
-
-### Matheus Bressan
-
-Desenvolvedor do projeto e integrante responsável pela implementação, organização e publicação da aplicação.
-
-### Yasmim Santos
-
-Desenvolvedora do projeto e integrante responsável pela colaboração no desenvolvimento e na construção da experiência do sistema.
-
-## Projeto acadêmico
-
-O Stock Guardians foi desenvolvido como projeto de conclusão de curso, unindo desenvolvimento web, organização de dados e design de interfaces para solucionar uma necessidade prática de gerenciamento de estoque.
-
-## Licença
-
-Este projeto está disponível sob a licença MIT. Consulte o arquivo [LICENSE](LICENSE) para mais informações.
+Sistema web de gestão e controlo de stock desenvolvido como Trabalho de Conclusão de Curso (TCC). A aplicação permite o registo, monitorização e rastreio de alimentos e lotes, garantindo maior eficiência e segurança no controlo de inventário.
 
 ---
 
-Feito com dedicação por **Rhuan Alvarinho, Matheus Bressan e Yasmim Santos**.
+## 🚀 Tecnologias Utilizadas
+
+O projeto foi desenvolvido com tecnologias modernas de mercado:
+* **Python 3.10+** & **Django 5.x** (Backend e ORM)
+* **PostgreSQL 15** (Base de dados relacional principal)
+* **Docker & Docker Compose** (Containerização do ambiente de base de dados)
+* **Bootstrap / HTML5 / CSS3** (Interface de utilizador)
+* **Python-Decouple** (Gestão segura de variáveis de ambiente)
+
+---
+
+## ⚙️ Pré-requisitos
+
+Antes de iniciar, certifique-se de ter instalado na máquina:
+* [Python](https://www.python.org/) (versão 3.10 ou superior)
+* [Git](https://git-scm.com/)
+* [Docker Desktop](https://www.docker.com/) a funcionar em segundo plano.
+
+---
+
+## 📦 Como Executar o Projeto noutra Máquina
+
+Siga os passos abaixo para clonar e colocar o projeto a funcionar num novo computador:
+
+### 1. Clonar o Repositório
+Abra o terminal e clone o projeto para a sua máquina:
+```bash
+git clone <url-do-seu-repositorio-git>
+cd sistema-estoque-TCC
+
+No Windows (CMD / PowerShell):
+
+Bash
+python -m venv venv
+venv\Scripts\activate
+
+Instalar as Dependências
+Com o ambiente virtual ativo, instale todas as bibliotecas necessárias:
+
+Bash
+pip install -r requirements.txt
+
+Configurar as Variáveis de Ambiente (.env)
+Na raiz do projeto (na mesma pasta onde está o manage.py), crie um ficheiro chamado .env e cole as seguintes configurações de acesso:
+
+Snippet de código
+DEBUG=True
+SECRET_KEY=django-insecure-sua-chave-secreta-aqui
+DB_NAME=stock_guardians_db
+DB_USER=admin_estoque
+DB_PASSWORD=senha_segura_123
+DB_HOST=localhost
+DB_PORT=5433
+
+Iniciar a Base de Dados via Docker
+Suba o contentor do PostgreSQL configurado no Docker Compose:
+
+Bash
+docker-compose up -d
+
+Executar as Migrações do Django
+Crie as tabelas estruturadas na base de dados PostgreSQL:
+
+Bash
+python manage.py migrate
+
+Iniciar o Servidor de Desenvolvimento
+Por fim, execute o servidor local do Django:
+
+Bash
+python manage.py runserver
+Aceda ao sistema através do browser no endereço: http://127.0.0.1:8000/
+
+Autores
+Rhuan Rafael Milares Alvarinho
+Matheus Bressan Vila Nova
+Yasmim Santos Vieira
+
+Projeto: TCC - Stock Guardians
