@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.utils import timezone
 from datetime import date, timedelta
 from .models import Alimento, Lote, Movimentacao
@@ -13,6 +13,12 @@ from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimento
 from django.db.models.expressions import ExpressionWrapper
 from django.db.models import FloatField
 from django.db.models.functions import Cast, Coalesce
+
+# Importações para o ReportLab (Geração de PDF)
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 # Páginas em gerais e dashboard
 
@@ -186,8 +192,6 @@ def login_view(request):
     return render(request, 'alimentos/login.html', {'form': form})
 
 # Movimentação de lotes
-# Movimentação de lotes
-# Movimentação de lotes
 def movimentacao_estoque(request):
     if request.method == 'POST':
         form = MovimentacaoForm(request.POST)
@@ -195,7 +199,7 @@ def movimentacao_estoque(request):
         if form.is_valid():
             tipo = form.cleaned_data['tipo']
             alimento = form.cleaned_data['alimento']
-            lote_selecionado = form.cleaned_data['numero_lote'] # Agora é um objeto Lote ou texto dependendo do fluxo
+            lote_selecionado = form.cleaned_data['numero_lote']
             quantidade_pacotes = form.cleaned_data['quantidade']
             data_validade = form.cleaned_data.get('data_validade')
 
@@ -203,7 +207,6 @@ def movimentacao_estoque(request):
 
             # --- SAÍDA ---
             if tipo == 'SAIDA':
-                # Como virou um Select, o usuário escolhe um lote existente da lista
                 lote = lote_selecionado
                 
                 if not lote or lote.quantidade_atual < quantidade_real_estoque:
@@ -227,14 +230,11 @@ def movimentacao_estoque(request):
 
             # --- ENTRADA ---
             elif tipo == 'ENTRADA':
-                # Na entrada, se ele selecionou um lote existente da lista, reaproveita. 
-                # (Se você ainda permite digitar novo lote na entrada, tratamos aqui)
                 if isinstance(lote_selecionado, Lote):
                     lote = lote_selecionado
                     lote.quantidade_atual += quantidade_real_estoque
                     lote.save()
                 else:
-                    # Caso seja um texto livre (se mantido)
                     numero_lote_str = str(lote_selecionado)
                     lote = Lote.objects.filter(alimento=alimento, numero_lote=numero_lote_str).first()
                     if lote:
@@ -336,3 +336,103 @@ def relatorio_movimentacoes(request, tipo):
             'total_quantidade': total_quantidade,
         }
     )
+
+@login_required(login_url='login')
+def exportar_pdf_movimentacoes(request, tipo):
+    tipos_validos = {
+        'entradas': ('ENTRADA', 'Relatório de Entradas'),
+        'saidas': ('SAIDA', 'Relatório de Saídas'),
+    }
+
+    if tipo not in tipos_validos:
+        raise Http404('Tipo de relatório inválido.')
+
+    tipo_valor, titulo = tipos_validos[tipo]
+    hoje = timezone.localdate()
+
+    try:
+        data_inicio = date.fromisoformat(request.GET.get('data_inicio', str(hoje)))
+    except ValueError:
+        data_inicio = hoje
+
+    try:
+        data_fim = date.fromisoformat(request.GET.get('data_fim', str(hoje)))
+    except ValueError:
+        data_fim = hoje
+
+    movimentacoes = (
+        Movimentacao.objects
+        .filter(tipo=tipo_valor, data_movimentacao__range=(data_inicio, data_fim))
+        .select_related('lote', 'lote__alimento')
+        .order_by('-data_movimentacao', 'lote__alimento__nome')
+    )
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="relatorio_{tipo}_{data_inicio}_a_{data_fim}.pdf"'
+
+    doc = SimpleDocTemplate(response, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    elementos = []
+
+    styles = getSampleStyleSheet()
+    titulo_style = ParagraphStyle(
+        'TituloRelatorio',
+        parent=styles['Heading1'],
+        fontSize=18,
+        textColor=colors.HexColor('#e65100'),
+        spaceAfter=10
+    )
+    sub_style = ParagraphStyle(
+        'SubTituloRelatorio',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#666666'),
+        spaceAfter=20
+    )
+
+    elementos.append(Paragraph(titulo, titulo_style))
+    elementos.append(Paragraph(f"Período: {data_inicio.strftime('%d/%m/%Y')} até {data_fim.strftime('%d/%m/%Y')}", sub_style))
+    elementos.append(Spacer(1, 10))
+
+    dados_tabela = [
+        ['Data', 'Alimento', 'Lote', 'Quantidade']
+    ]
+
+    for mov in movimentacoes:
+        alimento = mov.lote.alimento
+        if alimento.quantidade_embalagem and alimento.quantidade_embalagem > 0:
+            qtd_embalagens = int(mov.quantidade / alimento.quantidade_embalagem)
+            qtd_str = f"{qtd_embalagens} {alimento.get_embalagem_display()}s ({mov.quantidade:.2f} {alimento.get_unidade_medida_display()})"
+        else:
+            qtd_str = f"{mov.quantidade:.2f} {alimento.get_unidade_medida_display()}"
+
+        dados_tabela.append([
+            mov.data_movimentacao.strftime('%d/%m/%Y'),
+            alimento.nome,
+            mov.lote.numero_lote,
+            qtd_str
+        ])
+
+    if len(dados_tabela) == 1:
+        dados_tabela.append(['-', 'Nenhum registro encontrado para este período.', '-', '-'])
+
+    tabela = Table(dados_tabela, colWidths=[80, 160, 110, 190])
+    tabela.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f57c00')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f9f9f9')]),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dddddd')),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+    ]))
+
+    elementos.append(tabela)
+    doc.build(elementos)
+
+    return response
