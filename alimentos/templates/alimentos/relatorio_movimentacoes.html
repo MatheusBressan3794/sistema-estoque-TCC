@@ -65,7 +65,23 @@
                     <td>{{ mov.data_movimentacao|date:"d/m/Y" }}</td>
                     <td>{{ mov.lote.alimento.nome }}</td>
                     <td>{{ mov.lote.numero_lote }}</td>
-                    <td class="text-end">{{ mov.quantidade }}</td>
+                    <td class="text-end">
+                        {% with alimento=mov.lote.alimento %}
+                            {% if alimento.quantidade_embalagem and alimento.quantidade_embalagem > 0 %}
+                                <!-- Exibe a quantidade de pacotes/vidros inteiros e entre parênteses o valor total em kg/ml -->
+                                <span class="fw-bold">
+                                    {% widthratio mov.quantidade alimento.quantidade_embalagem 1 %} {{ alimento.get_embalagem_display }}s
+                                </span>
+                                <span class="text-muted small d-block">
+                                    ({{ mov.quantidade|floatformat:2 }} {{ alimento.get_unidade_medida_display }})
+                                </span>
+                            {% else %}
+                                <span class="fw-bold">
+                                    {{ mov.quantidade|floatformat:2 }} {{ alimento.get_unidade_medida_display }}
+                                </span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>

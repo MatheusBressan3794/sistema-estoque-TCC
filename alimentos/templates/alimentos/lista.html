@@ -99,9 +99,9 @@
                 </td>
 
 
-                <!-- Embalagem -->
+                <!-- Embalagem (Forçado para Pacote para evitar bugs de caracteres) -->
                 <td>
-                    {{ alimento.get_embalagem_display }}
+                    Pacote
                 </td>
 
 
@@ -112,10 +112,9 @@
                 </td>
 
 
-                <!-- Quantidade Total (Aqui foi feita a alteração!) -->
+                <!-- Quantidade Total (Forçado para Pacotes) -->
                 <td>
-                    {{ alimento.quantidade_total }}
-                    {{ alimento.get_embalagem_display}}s
+                    {{ alimento.pacotes_totais|default:0|floatformat:0 }} Pacotes
                 </td>
 
 

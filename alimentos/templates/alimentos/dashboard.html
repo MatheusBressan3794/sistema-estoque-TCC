@@ -1,7 +1,6 @@
 {% extends 'alimentos/base.html' %}
 {% block title %}Visão geral{% endblock %}
 {% block page_label %}Visão geral{% endblock %}
-
 {% block content %}
 <section class="page-heading">
     <div>
@@ -49,13 +48,13 @@
     </article>
 </section>
 
-<!-- SEÇÃO DE PRODUTOS EM FALTA -->
+<!-- SEÇÃO DE PRODUTOS EM FALTA OU EM ESTOQUE MÍNIMO -->
 <section class="row mt-4 mb-4">
     <div class="col-12">
         <div class="card shadow-sm border-0 p-4" style="background-color: #fff; border-radius: 12px;">
             <div class="d-flex align-items-center mb-3">
                 <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-2"></i>
-                <h5 class="mb-0 fw-bold">Produtos em Falta no Estoque</h5>
+                <h5 class="mb-0 fw-bold">Produtos em Falta ou em Estoque Mínimo</h5>
             </div>
 
             {% if alimentos_faltantes %}
@@ -66,6 +65,8 @@
                                 <th>Nome do Alimento</th>
                                 <th>Embalagem</th>
                                 <th>Quantidade Atual</th>
+                                <th>Estoque Mínimo</th>
+                                <th>Status</th>
                                 <th class="text-end">Ação</th>
                             </tr>
                         </thead>
@@ -74,7 +75,21 @@
                             <tr>
                                 <td><strong>{{ item.nome }}</strong></td>
                                 <td>{{ item.embalagem }}</td>
-                                <td><span class="badge bg-danger">0 {{ item.unidade_medida }}</span></td>
+                                <td>
+                                    <span class="badge bg-danger fs-6">
+                                        {{ item.total_estoque|default:0 }} {{ item.unidade_medida }}
+                                    </span>
+                                </td>
+                                <!-- Mostrando o valor multiplicado (ex: 50 KG) -->
+                                <td>{{ item.estoque_minimo_calc|default:0 }} {{ item.unidade_medida }}</td>
+                                <td>
+                                    {% if item.total_estoque|default:0 <= 0 %}
+                                        <span class="badge bg-danger">Sem Estoque</span>
+                                    {% else %}
+                                        <!-- Texto alterado para Em falta -->
+                                        <span class="badge bg-warning text-dark">Em falta</span>
+                                    {% endif %}
+                                </td>
                                 <td class="text-end">
                                     <a href="{% url 'movimentacao_estoque' %}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-plus-circle"></i> Repor
@@ -87,7 +102,7 @@
                 </div>
             {% else %}
                 <div class="text-muted py-2">
-                    <i class="bi bi-check-circle text-success me-1"></i> Nenhum produto em falta no momento. Tudo em ordem!
+                    <i class="bi bi-check-circle text-success me-1"></i> Nenhum produto em falta ou no limite do estoque mínimo. Tudo em ordem!
                 </div>
             {% endif %}
         </div>
@@ -96,7 +111,7 @@
 
 <!-- Seção Inferior (Vencimento Próximo e Comece por aqui) -->
 <section class="dashboard-lower">
-    <!-- Painel com o quadrado verde clarinho de fundo que você circulou -->
+    <!-- Painel com o quadrado verde clarinho de fundo -->
     <div class="quote-panel" style="background-color: #eaf4ed !important;">
         <div class="d-flex align-items-center mb-3">
             <i class="bi bi-calendar-exclamation text-success fs-4 me-2"></i>
@@ -123,7 +138,7 @@
                                 </a>
                             </td>
                             
-                            <!-- Lote com o estilo de pílula da imagem -->
+                            <!-- Lote -->
                             <td class="py-3">
                                 {% if lote.data_validade < hoje %}
                                     <span class="badge rounded-pill bg-danger bg-opacity-10 text-danger px-3 py-2 fw-semibold border border-danger border-opacity-25 shadow-sm">
@@ -136,7 +151,7 @@
                                 {% endif %}
                             </td>
 
-                            <!-- Validade idêntica à imagem -->
+                            <!-- Validade -->
                             <td class="py-3">
                                 {% if lote.data_validade < hoje %}
                                     <span class="badge rounded-pill bg-danger text-white px-3 py-2 fw-bold shadow-sm">
