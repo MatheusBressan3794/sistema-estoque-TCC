@@ -1,5 +1,7 @@
 {% extends 'alimentos/base.html' %}
 
+{% load static %}
+
 {% block title %}Movimentação{% endblock %}
 
 {% block page_label %}Movimentação{% endblock %}
@@ -49,7 +51,8 @@
             {{ form.quantidade.errors }}
         </div>
 
-        <div class="form-group">
+        <!-- Bloco da data de validade com ID claro para o JavaScript localizar facilmente -->
+        <div class="form-group" id="grupo-data-validade">
             {{ form.data_validade.label_tag }}
             {{ form.data_validade }}
             {{ form.data_validade.errors }}
@@ -69,5 +72,8 @@
     </form>
 
 </section>
+
+<!-- Script externo chamado corretamente dentro do bloco content -->
+<script src="{% static 'alimentos/js/movimentacao.js' %}"></script>
 
 {% endblock %}

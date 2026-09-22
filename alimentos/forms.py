@@ -15,7 +15,6 @@ class AlimentoForm(forms.ModelForm):
             'quantidade_minima',
             'tipo_uso'
         ]
-        # Aqui estão os labels alterados para facilitar o entendimento
         labels = {
             'quantidade_embalagem': 'Tamanho da embalagem (Peso/Volume)',
             'quantidade_minima': 'Estoque mínimo de alerta',
@@ -63,7 +62,7 @@ class CriarAlimentoForm(AlimentoForm):
         )
     )
     quantidade_inicial = forms.IntegerField(
-        label='Qtd. de embalagens neste lote',  # Aqui mudamos o nome do segundo campo
+        label='Qtd. de embalagens neste lote',
         min_value=1,
         required=True,
         widget=forms.NumberInput(
@@ -75,7 +74,7 @@ class CriarAlimentoForm(AlimentoForm):
         )
     )
     
-#Editar lote
+# Editar lote
 class LoteForm(forms.ModelForm):
     class Meta:
         model = Lote
@@ -122,13 +121,15 @@ class MovimentacaoForm(forms.Form):
         )
     )
 
-    numero_lote = forms.CharField(
+    # Transformado em ModelChoiceField para listar os lotes cadastrados em vez de texto livre
+    numero_lote = forms.ModelChoiceField(
         label='Número do lote',
-        max_length=100,
-        widget=forms.TextInput(
+        queryset=Lote.objects.filter(quantidade_atual__gt=0),
+        empty_label='Selecione um lote',
+        required=True,
+        widget=forms.Select(
             attrs={
-                'class': 'form-control',
-                'placeholder': 'Ex.: ARZ2026-001'
+                'class': 'form-control'
             }
         )
     )
@@ -147,12 +148,8 @@ class MovimentacaoForm(forms.Form):
 
     data_validade = forms.DateField(
         label='Data de validade',
-        widget=forms.DateInput(
-            attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }
-        )
+        required=False,  # Essencial para não obrigar na saída
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
 # Criar conta
