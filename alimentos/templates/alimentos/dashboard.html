@@ -20,32 +20,40 @@
     </a>
 </section>
 
-<!-- Cartões Principais (Estoque, Movimentações, Relatórios) -->
+<!-- Cartões Principais (Estoque, Movimentações, Relatórios) - Totalmente Clicáveis -->
 <section class="summary-grid">
-    <article class="metric-card metric-orange">
-        <span class="metric-icon"><i class="bi bi-box-seam"></i></span>
-        <div>
-            <span>Total de itens</span>
-            <strong>Estoque</strong>
-            <small>Consulte os itens cadastrados</small>
-        </div>
-    </article>
-    <article class="metric-card metric-green">
-        <span class="metric-icon"><i class="bi bi-arrow-left-right"></i></span>
-        <div>
-            <span>Fluxo do estoque</span>
-            <strong>Movimentações</strong>
-            <small>Registre entradas e saídas</small>
-        </div>
-    </article>
-    <article class="metric-card metric-light">
-        <span class="metric-icon"><i class="bi bi-bar-chart-line"></i></span>
-        <div>
-            <span>Acompanhe resultados</span>
-            <strong>Relatórios</strong>
-            <small>Tenha uma visão mais ampla</small>
-        </div>
-    </article>
+    <a href="{% url 'listar_alimentos' %}" class="text-decoration-none">
+        <article class="metric-card metric-orange h-100">
+            <span class="metric-icon"><i class="bi bi-box-seam"></i></span>
+            <div>
+                <span>Total de itens</span>
+                <strong>Estoque</strong>
+                <small>Consulte os itens cadastrados</small>
+            </div>
+        </article>
+    </a>
+
+    <a href="{% url 'movimentacao_estoque' %}" class="text-decoration-none">
+        <article class="metric-card metric-green h-100">
+            <span class="metric-icon"><i class="bi bi-arrow-left-right"></i></span>
+            <div>
+                <span>Fluxo do estoque</span>
+                <strong>Movimentações</strong>
+                <small>Registre entradas e saídas</small>
+            </div>
+        </article>
+    </a>
+
+    <a href="{% url 'relatorios' %}" class="text-decoration-none">
+        <article class="metric-card metric-light h-100">
+            <span class="metric-icon"><i class="bi bi-bar-chart-line"></i></span>
+            <div>
+                <span>Acompanhe resultados</span>
+                <strong>Relatórios</strong>
+                <small>Tenha uma visão mais ampla</small>
+            </div>
+        </article>
+    </a>
 </section>
 
 <!-- SEÇÃO DE PRODUTOS EM FALTA OU EM ESTOQUE MÍNIMO -->
