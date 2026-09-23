@@ -20,8 +20,15 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Páginas em gerais e dashboard
+from django.contrib.auth import logout
 
+#Desloga o usuário do sistema
+def logout_view(request):
+    logout(request) 
+    return redirect('login')
+
+# Páginas em gerais e dashboard
+@login_required
 def inicio(request):
     return render(request, 'alimentos/inicio.html')
 
@@ -51,6 +58,7 @@ def dashboard(request):
     return render(request, 'alimentos/dashboard.html', context)
 
 # Listar os alimentos do estoque
+@login_required
 def listar_alimentos(request):
     busca = request.GET.get('busca', '')
     
@@ -78,6 +86,7 @@ def listar_alimentos(request):
     )
 
 # Detalhes do alimento e seus lotes
+@login_required
 def detalhes_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     lotes = alimento.lotes.filter(quantidade_atual__gt=0).order_by('data_validade')
@@ -92,6 +101,7 @@ def detalhes_alimento(request, id):
     )
 
 # Editar lote (número do lote, quantidade e validade)
+@login_required
 def editar_lote(request, id):
     lote = get_object_or_404(Lote, id=id)
     form = LoteForm(request.POST or None, instance=lote)
@@ -102,6 +112,7 @@ def editar_lote(request, id):
     return render(request, 'alimentos/lote_form.html', {'form': form, 'lote': lote})
 
 # Criar alimento
+@login_required
 def criar_alimento(request):
     form = CriarAlimentoForm(request.POST or None)
     
@@ -133,6 +144,7 @@ def criar_alimento(request):
     return render(request, 'alimentos/form.html', {'form': form})
 
 # Atualizar alimento
+@login_required
 def atualizar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     form = AlimentoForm(request.POST or None, instance=alimento)
@@ -143,6 +155,7 @@ def atualizar_alimento(request, id):
     return render(request, 'alimentos/form.html', {'form': form})
 
 # Deletar alimento
+@login_required
 def deletar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     tem_lotes = alimento.lotes.exists()
@@ -192,6 +205,7 @@ def login_view(request):
     return render(request, 'alimentos/login.html', {'form': form})
 
 # Movimentação de lotes
+@login_required
 def movimentacao_estoque(request):
     if request.method == 'POST':
         form = MovimentacaoForm(request.POST)
@@ -266,7 +280,6 @@ def movimentacao_estoque(request):
     return render(request, 'alimentos/movimentacao.html', {'form': form})
 
 # Produtos em falta e Alerta de Estoque Mínimo
-@login_required
 def alerta_estoque_minimo(request):
     alimentos_criticos = Alimento.objects.annotate(
         total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
@@ -277,7 +290,7 @@ def alerta_estoque_minimo(request):
     )
     return render(request, 'alimentos/estoque_minimo.html', {'alimentos_criticos': alimentos_criticos})
 
-@login_required
+
 def produtos_em_falta(request):
     alimentos_faltantes = Alimento.objects.annotate(
         total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
@@ -288,10 +301,11 @@ def produtos_em_falta(request):
     )
     return render(request, 'alimentos/produtos_em_falta.html', {'alimentos_faltantes': alimentos_faltantes})
 
-@login_required(login_url='login')
+@login_required
 def relatorios(request):
     return render(request, 'alimentos/relatorios.html')
 
+@login_required
 def relatorio_movimentacoes(request, tipo):
     tipos_validos = {
         'entradas': ('ENTRADA', 'Entradas', 'entrada'),
@@ -337,7 +351,7 @@ def relatorio_movimentacoes(request, tipo):
         }
     )
 
-@login_required(login_url='login')
+@login_required
 def exportar_pdf_movimentacoes(request, tipo):
     tipos_validos = {
         'entradas': ('ENTRADA', 'Relatório de Entradas'),
