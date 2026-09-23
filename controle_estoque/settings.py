@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = config('SECRET_KEY', default='chave-padrao-desenvolvimento-12345')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
@@ -78,19 +78,26 @@ WSGI_APPLICATION = 'controle_estoque.wsgi.application'
 
 database_url = os.environ.get('DATABASE_URL')
 
-if not database_url:
-    raise ValueError("A variável de ambiente DATABASE_URL não está configurada no Render!")
+database_url = os.environ.get('DATABASE_URL')
 
-database_url = database_url.strip('"\'').strip()
-
-DATABASES = {
-    'default': dj_database_url.parse(
-        database_url,
-        conn_max_age=600,
-        ssl_require=False
-    )
-}
-
+if database_url:
+    # No Render, a variável DATABASE_URL sempre existe
+    database_url = database_url.strip('"\'').strip()
+    DATABASES = {
+        'default': dj_database_url.parse(
+            database_url,
+            conn_max_age=600,
+            ssl_require=False
+        )
+    }
+else:
+    # Localmente, sem essa variável, cai pro SQLite só pra desenvolvimento
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -128,7 +135,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+if DEBUG:
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
