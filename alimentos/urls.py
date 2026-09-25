@@ -34,5 +34,8 @@ urlpatterns = [
     path('relatorios/<str:tipo>/', views.relatorio_movimentacoes,  name='relatorio_movimentacoes'),
     path('produtos-em-falta/', views.produtos_em_falta, name='produtos_em_falta'),
     path('relatorios/<str:tipo>/pdf/', views.exportar_pdf_movimentacoes, name='exportar_pdf_movimentacoes'),
+    
 
+    path('ativar/<uidb64>/<token>/', views.ativar_conta, name='ativar_conta'),
 ]
+
