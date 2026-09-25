@@ -184,6 +184,18 @@ def deletar_alimento(request, id):
     return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento, 'tem_lotes': tem_lotes})
 
 # Autenticação e E-mail
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
+from django.contrib.auth import login as auth_login
+from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.urls import reverse
+from .forms import CriarContaForm
+
 def cadastro(request):
     if request.method == 'POST':
         form = CriarContaForm(request.POST)
@@ -227,15 +239,15 @@ Equipa Stock Guardian"""
                 send_mail(
                     assunto,
                     mensagem,
-                    'nao-responder@stockguardian.com',
+                    None,  # <-- MUDANÇA: Usa automaticamente o DEFAULT_FROM_EMAIL definido no settings.py
                     [email],
                     fail_silently=False,
                 )
                 messages.success(request, 'Conta criada! Enviámos um link para o seu e-mail para ativar o acesso.')
             except Exception as e:
-                # Caso ocorra um erro de envio, o utilizador é avisado e apagado da base
+                # Caso ocorra um erro de envio, o utilizador é apagado da base e o erro detalhado é mostrado
                 user.delete() 
-                messages.error(request, 'Erro ao enviar o e-mail. Por favor, tente novamente.')
+                messages.error(request, f'Erro ao enviar o e-mail. Detalhe: {e}')
                 
             return redirect('login')
     else:
@@ -272,8 +284,6 @@ def login_view(request):
     else:
         form = AuthenticationForm()
     return render(request, 'alimentos/login.html', {'form': form})
-
-# Movimentação de lotes
 @login_required
 def movimentacao_estoque(request):
     if request.method == 'POST':
