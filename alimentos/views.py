@@ -233,7 +233,7 @@ Para concluir a criação da sua conta e liberar o seu acesso ao sistema, por fa
 Se não foi você que fez este pedido, pode simplesmente ignorar este e-mail.
 
 Atenciosamente,
-Equipa Stock Guardian"""
+Equipe Stock Guardian"""
 
             try:
                 send_mail(
