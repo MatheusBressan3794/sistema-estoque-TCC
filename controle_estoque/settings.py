@@ -154,4 +154,4 @@ EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
 ANYMAIL = {
     'BREVO_API_KEY': config('BREVO_API_KEY'),
 }
-DEFAULT_FROM_EMAIL = 'seu_email_verificado@gmail.com' # O e-mail que validou no Brevo
+DEFAULT_FROM_EMAIL = 'alvarinhorhuan@gmail.com' # O e-mail que validou no Brevo
