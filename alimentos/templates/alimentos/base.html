@@ -33,9 +33,14 @@
 
         <main class="main-content">
 
-            <!-- Navbar superior removida -->
+            <!-- Botão de Modo Noturno no topo direito -->
+            <div class="d-flex justify-content-end p-3 pb-0">
+                <button id="darkModeToggle" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm" style="cursor: pointer;">
+                    <i class="bi bi-moon-fill me-1"></i> Modo Noturno
+                </button>
+            </div>
 
-            <div class="content-wrap">
+            <div class="content-wrap pt-3">
 
                 <!-- Mensagens do sistema -->
                 {% if messages %}
@@ -55,8 +60,6 @@
     </div>
 
     {% endblock %}
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="{% static 'alimentos/js/app.js' %}"></script>
 
