@@ -33,7 +33,6 @@ def logout_view(request):
     return redirect('login')
 
 # Páginas em gerais e dashboard
-@login_required
 def inicio(request):
     return render(request, 'alimentos/inicio.html')
 
