@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import ProtectedError, Sum, F, Q
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, Cast
 from django.contrib import messages
-from django.contrib.auth import login as auth_login
+from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse
@@ -12,7 +12,14 @@ from .models import Alimento, Lote, Movimentacao
 from .forms import AlimentoForm, MovimentacaoForm, CriarContaForm, CriarAlimentoForm, LoteForm
 from django.db.models.expressions import ExpressionWrapper
 from django.db.models import FloatField
-from django.db.models.functions import Cast, Coalesce
+
+# Importações de E-mail e Segurança
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.urls import reverse
 
 # Importações para o ReportLab (Geração de PDF)
 from reportlab.lib.pagesizes import letter
@@ -20,9 +27,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-from django.contrib.auth import logout
-
-#Desloga o usuário do sistema
+# Desloga o usuário do sistema
 def logout_view(request):
     logout(request) 
     return redirect('login')
@@ -179,17 +184,82 @@ def deletar_alimento(request, id):
 
     return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento, 'tem_lotes': tem_lotes})
 
-# Autenticação
+# Autenticação e E-mail
 def cadastro(request):
     if request.method == 'POST':
         form = CriarContaForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Conta criada com sucesso! Faça login para entrar.')
+            email = form.cleaned_data.get('email')
+            
+            # 1. Bloqueia o registo se o e-mail já existir na base de dados
+            if User.objects.filter(email=email).exists():
+                messages.error(request, 'Este e-mail já se encontra registado.')
+                return render(request, 'alimentos/cadastro.html', {'form': form})
+
+            # 2. Salva os dados do form, mas cria o utilizador como inativo
+            user = form.save(commit=False)
+            user.is_active = False 
+            user.save()
+
+            # 3. Gera um identificador e um token seguro e temporário
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+
+            # 4. Constrói o link dinâmico
+            dominio = request.get_host()
+            link_ativacao = f"http://{dominio}{reverse('ativar_conta', kwargs={'uidb64': uid, 'token': token})}"
+
+            # 5. Dispara o e-mail com a mensagem personalizada
+            assunto = 'Confirme o seu registo no Stock Guardian'
+            
+            mensagem = f"""Olá!
+
+Bem-vindo ao Stock Guardian. Recebemos um pedido de registo com este e-mail.
+
+Para concluir a criação da sua conta e liberar o seu acesso ao sistema, por favor clique no link abaixo:
+{link_ativacao}
+
+Se não foi você que fez este pedido, pode simplesmente ignorar este e-mail.
+
+Atenciosamente,
+Equipa Stock Guardian"""
+
+            try:
+                send_mail(
+                    assunto,
+                    mensagem,
+                    'nao-responder@stockguardian.com',
+                    [email],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Conta criada! Enviámos um link para o seu e-mail para ativar o acesso.')
+            except Exception as e:
+                # Caso ocorra um erro de envio, o utilizador é avisado e apagado da base
+                user.delete() 
+                messages.error(request, 'Erro ao enviar o e-mail. Por favor, tente novamente.')
+                
             return redirect('login')
     else:
         form = CriarContaForm()
     return render(request, 'alimentos/cadastro.html', {'form': form})
+
+def ativar_conta(request, uidb64, token):
+    try:
+        # Descodifica o ID do utilizador que veio no link
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    # Verifica se o utilizador existe e se o token é válido
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, 'E-mail verificado com sucesso! Já pode fazer o login no sistema.')
+        return redirect('login')
+    else:
+        messages.error(request, 'O link de ativação é inválido ou já expirou. Tente registar-se novamente.')
+        return redirect('login')
 
 def login_view(request):
     if request.method == 'POST':
@@ -199,7 +269,7 @@ def login_view(request):
             auth_login(request, user)
             return redirect('dashboard')
         else:
-            messages.error(request, 'Usuário ou senha incorretos.')
+            messages.error(request, 'Usuário, senha incorretos ou conta inativa.')
     else:
         form = AuthenticationForm()
     return render(request, 'alimentos/login.html', {'form': form})

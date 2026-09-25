@@ -76,9 +76,7 @@ WSGI_APPLICATION = 'controle_estoque.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-database_url = os.environ.get('DATABASE_URL')
-
-database_url = os.environ.get('DATABASE_URL')
+database_url = config('DATABASE_URL', default='')
 
 if database_url:
     # No Render, a variável DATABASE_URL sempre existe
@@ -147,3 +145,10 @@ else:
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_PASS')
