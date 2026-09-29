@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator  # Importação necessária para a validação
+from django.contrib.auth.models import User
 
 class Alimento(models.Model):
 
@@ -112,3 +113,17 @@ class Movimentacao(models.Model):
 
     def __str__(self):
         return f"{self.tipo} - {self.lote.alimento.nome}"
+      
+class PerfilUsuario(models.Model):
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='perfil'
+    )
+
+    # Marca se a diretora já autorizou o acesso dessa conta ao sistema
+    aprovado_diretora = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.user.username

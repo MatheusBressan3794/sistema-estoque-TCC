@@ -78,11 +78,10 @@ class CriarAlimentoForm(AlimentoForm):
 class LoteForm(forms.ModelForm):
     class Meta:
         model = Lote
-        fields = ['numero_lote', 'quantidade_atual', 'data_validade']
+        fields = ['alimento', 'numero_lote', 'quantidade_atual', 'data_validade']
         widgets = {
+            'alimento': forms.Select(attrs={'class': 'form-control'}),
             'numero_lote': forms.TextInput(attrs={'class': 'form-control'}),
-            'quantidade_atual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     # Validação para impedir quantidade negativa
