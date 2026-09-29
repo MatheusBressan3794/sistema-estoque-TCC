@@ -22,10 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='chave-padrao-desenvolvimento-12345')
+SECRET_KEY = config('SECRET_KEY',default='chave-padrao-desenvolvimento-12345')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['*']
 
@@ -152,6 +152,12 @@ INSTALLED_APPS += [
 
 EMAIL_BACKEND = 'anymail.backends.brevo.EmailBackend'
 ANYMAIL = {
-    'BREVO_API_KEY': config('BREVO_API_KEY'),
+    'BREVO_API_KEY': config('BREVO_API_KEY', default=''),
 }
 DEFAULT_FROM_EMAIL = 'alvarinhorhuan@gmail.com' # O e-mail que validou no Brevo
+
+# Usa o console por padrão para desenvolvimento; usa Brevo se estiver configurado no .env
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND', 
+    default='django.core.mail.backends.console.EmailBackend'
+)
