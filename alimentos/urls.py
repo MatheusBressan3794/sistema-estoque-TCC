@@ -17,8 +17,6 @@ urlpatterns = [
     path('alimentos/', views.listar_alimentos, name='listar_alimentos'),
     path('alimentos/criar/', views.criar_alimento, name='criar_alimento'),
     path('alimentos/editar/<int:id>/', views.atualizar_alimento, name='atualizar_alimento'),
-    path('alimentos/deletar/<int:id>/', views.deletar_alimento, name='deletar_alimento'),
-
     #Ver lotes do alimento
     path('alimentos/<int:id>/', views.detalhes_alimento,       name='detalhes_alimento'),
 
@@ -37,5 +35,14 @@ urlpatterns = [
     
 
     path('ativar/<uidb64>/<token>/', views.ativar_conta, name='ativar_conta'),
+
+    # Aprovação e gerenciamento de contas (diretora)
+    path('contas/aprovar/', views.aprovar_contas, name='aprovar_contas'),
+    path('contas/aprovar/<int:id>/', views.aprovar_conta, name='aprovar_conta'),
+    path('contas/recusar/<int:id>/', views.recusar_conta, name='recusar_conta'),
+    path('contas/promover/<int:id>/', views.promover_admin, name='promover_admin'),
+    path('contas/rebaixar/<int:id>/', views.rebaixar_admin, name='rebaixar_admin'),
+    path('contas/excluir/<int:id>/', views.excluir_conta, name='excluir_conta'),
+
 ]
 
