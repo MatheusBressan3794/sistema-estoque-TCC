@@ -9,10 +9,20 @@
     </div>
     <div class="sidebar-label">Navegação</div>
     <nav class="sidebar-nav" aria-label="Navegação principal">
+        
         <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i> Visão geral</a>
+
         <a href="{% url 'listar_alimentos' %}" class="nav-link {% if request.resolver_match.url_name == 'listar_alimentos' %}active{% endif %}"><i class="bi bi-boxes"></i> Estoque</a>
+
         <a href="{% url 'movimentacao_estoque' %}" class="nav-link {% if request.resolver_match.url_name == 'movimentacao_estoque' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Movimentação</a>
+
         <a href="{% url 'relatorios' %}" class="nav-link {% if request.resolver_match.url_name == 'relatorios' %}active{% endif %}"><i class="bi bi-bar-chart-line"></i> Relatórios</a>
+
+    {% if request.user.is_staff %}
+        <a href="{% url 'aprovar_contas' %}" class="nav-link">
+            Gerenciar Usuários
+        </a>
+{% endif %}
     </nav>
     <div class="sidebar-bottom">
         <div class="support-box"><i class="bi bi-lightbulb"></i><div><strong>Dica rápida</strong><span>Mantenha as validades sempre atualizadas.</span></div></div>

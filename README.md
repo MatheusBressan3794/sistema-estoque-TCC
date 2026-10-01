@@ -26,18 +26,15 @@ Com o ambiente virtual criado e ativo, instale todas as bibliotecas necessárias
 pip install -r requirements.txt
 ```
 
-## 4. Configurar as Variáveis de Ambiente (`.env`)
+### 4. Configurar as Variáveis de Ambiente ( .env )
 
-Na raiz do projeto (na mesma pasta onde está o `manage.py`), crie um ficheiro chamado `.env` e cole o seguinte conteúdo:
+Na raiz do projeto (na mesma pasta onde está o `manage.py`), crie um ficheiro chamado `.env` e cole o seguinte conteúdo com as suas credenciais reais:
 
 ```env
 DEBUG=True
 SECRET_KEY=django-insecure-sua-chave-secreta-aqui
-DB_NAME=stock_guardians_db
-DB_USER=admin_estoque
-DB_PASSWORD=senha_segura_123
-DB_HOST=localhost
-DB_PORT=5433
+DATABASE_URL=cole_aqui_a_sua_string_de_conexao_do_supabase
+BREVO_API_KEY=cole_aqui_a_sua_chave_de_api_do_brevo
 ```
 
 ## 5. Iniciar a Base de Dados via Docker
