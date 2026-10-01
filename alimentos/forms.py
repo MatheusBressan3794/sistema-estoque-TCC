@@ -1,7 +1,7 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Alimento, Lote, Movimentacao
+from django.contrib.auth.forms import UserCreationForm
+from .models import Alimento, Lote, Movimentacao, Etec 
 
 # Cadastro de alimentos (Usado para Edição)
 class AlimentoForm(forms.ModelForm):
@@ -37,6 +37,7 @@ class AlimentoForm(forms.ModelForm):
         if quantidade_minima is not None and quantidade_minima < 0:
             raise forms.ValidationError("A quantidade mínima não pode ser negativa.")
         return quantidade_minima
+
 
 # Cadastro Inicial de Alimento (Exige o Lote junto)
 class CriarAlimentoForm(AlimentoForm):
@@ -74,15 +75,15 @@ class CriarAlimentoForm(AlimentoForm):
         )
     )
     
+
 # Editar lote
 class LoteForm(forms.ModelForm):
     class Meta:
         model = Lote
-        fields = ['numero_lote', 'quantidade_atual', 'data_validade']
+        fields = ['alimento', 'numero_lote', 'quantidade_atual', 'data_validade']
         widgets = {
+            'alimento': forms.Select(attrs={'class': 'form-control'}),
             'numero_lote': forms.TextInput(attrs={'class': 'form-control'}),
-            'quantidade_atual': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
-            'data_validade': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
         }
 
     # Validação para impedir quantidade negativa
@@ -121,7 +122,6 @@ class MovimentacaoForm(forms.Form):
         )
     )
 
-    # Transformado em ModelChoiceField para listar os lotes cadastrados em vez de texto livre
     numero_lote = forms.ModelChoiceField(
         label='Número do lote',
         queryset=Lote.objects.filter(quantidade_atual__gt=0),
@@ -152,8 +152,19 @@ class MovimentacaoForm(forms.Form):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
-# Criar conta
+
+# Criar conta (JUNTÁMOS TUDO AQUI!)
 class CriarContaForm(UserCreationForm):
+    
+    # Campo da ETEC que estava separado
+    etec = forms.ModelChoiceField(
+        queryset=Etec.objects.all(),
+        required=True,
+        label="Selecione a sua ETEC",
+        empty_label="Escolha uma escola...",
+        widget=forms.Select(attrs={'class': 'form-control'}) # Aplica o estilo do Bootstrap
+    )
+
     first_name = forms.CharField(
         label="Nome completo",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Como podemos chamar você?'})

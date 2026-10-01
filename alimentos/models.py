@@ -1,6 +1,18 @@
 from django.db import models
-from django.core.validators import MinValueValidator  # Importação necessária para a validação
+from django.core.validators import MinValueValidator
+from django.contrib.auth.models import User
 
+# --- 1. TABELA DE ESCOLAS (ETEC) ---
+class Etec(models.Model):
+    codigo = models.CharField(max_length=10, unique=True, help_text="Ex: 058")
+    nome = models.CharField(max_length=150, help_text="Ex: Etec Euro Albino de Souza")
+    cidade = models.CharField(max_length=100, help_text="Ex: Araras")
+
+    def __str__(self):
+        return f"{self.nome} - {self.cidade}"
+
+
+# --- 2. ALIMENTOS (Vinculados à ETEC) ---
 class Alimento(models.Model):
 
     EMBALAGENS = [
@@ -25,6 +37,9 @@ class Alimento(models.Model):
         ('ALMOCO', 'Almoço'),
     ]
 
+    # Relação com a ETEC
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='alimentos', null=True, blank=True)
+
     nome = models.CharField(max_length=100)
 
     embalagem = models.CharField(
@@ -35,7 +50,7 @@ class Alimento(models.Model):
     quantidade_embalagem = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        validators=[MinValueValidator(0.0)]  # Impede valores negativos
+        validators=[MinValueValidator(0.0)]
     )
 
     unidade_medida = models.CharField(
@@ -44,7 +59,7 @@ class Alimento(models.Model):
     )
 
     quantidade_minima = models.IntegerField(
-        validators=[MinValueValidator(0)]  # Impede valores negativos
+        validators=[MinValueValidator(0)]
     )
 
     tipo_uso = models.CharField(
@@ -55,15 +70,15 @@ class Alimento(models.Model):
     def __str__(self):
         return self.nome
         
-    # AQUI ESTÁ O CÁLCULO, AGORA NO LUGAR CERTO!
     @property
     def quantidade_total(self):
-        # Soma a 'quantidade_atual' de todos os lotes vinculados a este alimento
         total = sum(lote.quantidade_atual for lote in self.lotes.all())
         return total if total else 0
     
 
+# --- 3. LOTES (Vinculados à ETEC) ---
 class Lote(models.Model):
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='lotes', null=True, blank=True)
 
     alimento = models.ForeignKey(
         Alimento,
@@ -75,7 +90,7 @@ class Lote(models.Model):
 
     quantidade_atual = models.IntegerField(
         default=0,
-        validators=[MinValueValidator(0)]  # Estoque não pode ficar negativo
+        validators=[MinValueValidator(0)]
     )
 
     data_validade = models.DateField()
@@ -84,6 +99,7 @@ class Lote(models.Model):
         return f"{self.alimento.nome} - Lote {self.numero_lote}"
 
 
+# --- 4. MOVIMENTAÇÕES ---
 class Movimentacao(models.Model):
 
     TIPOS = [
@@ -103,7 +119,7 @@ class Movimentacao(models.Model):
     )
 
     quantidade = models.IntegerField(
-        validators=[MinValueValidator(1)]  # Movimentação tem que ser pelo menos 1
+        validators=[MinValueValidator(1)]
     )
 
     data_movimentacao = models.DateField(
@@ -111,4 +127,19 @@ class Movimentacao(models.Model):
     )
 
     def __str__(self):
-        return f"{self.tipo} - {self.lote.alimento.nome}"
+        return f"{this.tipo} - {self.lote.alimento.nome}"
+
+
+# --- 5. PERFIL DO UTILIZADOR (Vinculado à ETEC) ---
+class PerfilUsuario(models.Model):
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='perfil'
+    )
+    
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='usuarios', null=True, blank=True)
+    aprovado_diretora = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.username} ({self.etec})"
