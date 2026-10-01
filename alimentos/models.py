@@ -2,6 +2,17 @@ from django.db import models
 from django.core.validators import MinValueValidator  # Importação necessária para a validação
 from django.contrib.auth.models import User
 
+# --- 1. NOVA TABELA: Etec ---
+class Etec(models.Model):
+    codigo = models.CharField(max_length=10, unique=True, help_text="Ex: 058")
+    nome = models.CharField(max_length=150, help_text="Ex: Etec Euro Albino de Souza")
+    cidade = models.CharField(max_length=100, help_text="Ex: Araras")
+
+    def __str__(self):
+        return f"{self.nome} - {self.cidade}"
+
+
+# --- 2. MODELOS ATUALIZADOS ---
 class Alimento(models.Model):
 
     EMBALAGENS = [
@@ -25,6 +36,9 @@ class Alimento(models.Model):
         ('LANCHE', 'Lanche'),
         ('ALMOCO', 'Almoço'),
     ]
+
+    # Vínculo com a ETEC (Obrigatório)
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='alimentos')
 
     nome = models.CharField(max_length=100)
 
@@ -65,6 +79,8 @@ class Alimento(models.Model):
     
 
 class Lote(models.Model):
+    # Vínculo com a ETEC (Obrigatório)
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='lotes')
 
     alimento = models.ForeignKey(
         Alimento,
@@ -114,6 +130,7 @@ class Movimentacao(models.Model):
     def __str__(self):
         return f"{self.tipo} - {self.lote.alimento.nome}"
       
+
 class PerfilUsuario(models.Model):
 
     user = models.OneToOneField(
@@ -122,8 +139,11 @@ class PerfilUsuario(models.Model):
         related_name='perfil'
     )
 
+    # Vínculo do Utilizador com a ETEC (Obrigatório)
+    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='usuarios')
+
     # Marca se a diretora já autorizou o acesso dessa conta ao sistema
     aprovado_diretora = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.user.username
+        return f"{self.user.username} ({self.etec.nome})"

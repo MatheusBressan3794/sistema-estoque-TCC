@@ -1,7 +1,18 @@
-from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from .models import Alimento, Lote, Movimentacao
+from django import forms
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
+from .models import Etec 
+
+class CriarContaForm(UserCreationForm): # (O seu formulário pode herdar de outra classe, mantenha a sua)
+    
+    etec = forms.ModelChoiceField(
+        queryset=Etec.objects.all(),
+        required=True,
+        label="Selecione a sua ETEC",
+        empty_label="Escolha uma escola..."
+    )
+
 
 # Cadastro de alimentos (Usado para Edição)
 class AlimentoForm(forms.ModelForm):
