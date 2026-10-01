@@ -28,6 +28,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
+from .models import PerfilUsuario
+
 # Desloga o usuário do sistema
 def logout_view(request):
     logout(request) 
@@ -207,10 +209,9 @@ def cadastro(request):
             user.is_active = False 
             user.save()
 
-            # 2.1. Cria o perfil do usuário, pendente de aprovação da diretora
-            PerfilUsuario.objects.create(user=user)
-
-            # 3. Gera um identificador e um token seguro e temporário
+            # 2.1. Captura a ETEC escolhida no formulário e cria o perfil vinculado
+            etec_escolhida = form.cleaned_data.get('etec')
+            PerfilUsuario.objects.create(user=user, etec=etec_escolhida)
 
             # 3. Gera um identificador e um token seguro e temporário
             uid = urlsafe_base64_encode(force_bytes(user.pk))
