@@ -1,0 +1,114 @@
+{% extends 'alimentos/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Gerenciamento de Usuários</h2>
+
+    <!-- Seção de Solicitações Pendentes -->
+    <div class="card mb-5">
+        <div class="card-header bg-warning text-dark">
+            <h4 class="mb-0">Solicitações de Acesso Pendentes</h4>
+        </div>
+        <div class="card-body">
+            {% if pendentes %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Data de Cadastro</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in pendentes %}
+                            <tr>
+                                <td>{{ usuario.first_name|default:usuario.username }}</td>
+                                <td>{{ usuario.email }}</td>
+                                <td>{{ usuario.date_joined|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <form action="{% url 'aprovar_conta' usuario.id %}" method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-success btn-sm">Aprovar</button>
+                                    </form>
+                                    <form action="{% url 'recusar_conta' usuario.id %}" method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja recusar e excluir este usuário?')">Recusar</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">Não há solicitações de acesso pendentes no momento.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seção de Usuários Cadastrados -->
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Usuários Ativos no Sistema</h4>
+        </div>
+        <div class="card-body">
+            {% if aprovados %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for usuario in aprovados %}
+                            <tr>
+                                <td>{{ usuario.first_name|default:usuario.username }}</td>
+                                <td>{{ usuario.email }}</td>
+                                <td>
+                                    {% if usuario.is_staff %}
+                                        <span class="badge bg-primary">Administrador</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Usuário Comum</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <!-- Lógica para o botão Promover/Remover Admin -->
+                                    {% if not usuario.is_staff %}
+                                        <form action="{% url 'promover_admin' usuario.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="return confirm('Tornar este usuário um administrador?')">Tornar Admin</button>
+                                        </form>
+                                    {% else %}
+                                        {% if usuario != request.user %}
+                                            <form action="{% url 'rebaixar_admin' usuario.id %}" method="post" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Remover os privilégios de administrador deste usuário?')">Remover Admin</button>
+                                            </form>
+                                        {% else %}
+                                            <!-- Mostra um botão desativado para o próprio usuário logado -->
+                                            <button class="btn btn-secondary btn-sm" disabled>Você</button>
+                                        {% endif %}
+                                    {% endif %}
+                                
+                                    <!-- Lógica para o botão Excluir Conta -->
+                                    {% if usuario != request.user %}
+                                        <form action="{% url 'excluir_conta' usuario.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('ATENÇÃO: Deseja realmente excluir esta conta? Essa ação não pode ser desfeita.')">Excluir Conta</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted">Nenhum usuário comum ativo encontrado.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
