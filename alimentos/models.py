@@ -138,9 +138,15 @@ class Perfil(models.Model):
         on_delete=models.CASCADE,
         related_name='perfil'
     )
-    
-    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='usuarios', null=True, blank=True)
+    etec = models.ForeignKey(
+        'Etec',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='usuarios'
+    )
+    email_verificado = models.BooleanField(default=False)
     aprovado_diretora = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username} ({self.etec})"
+        return f"{self.user.username} ({self.etec or 'Sem Escola'})"

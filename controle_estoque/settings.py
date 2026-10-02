@@ -156,8 +156,12 @@ ANYMAIL = {
 }
 DEFAULT_FROM_EMAIL = 'alvarinhorhuan@gmail.com' # O e-mail que validou no Brevo
 
-# Usa o console por padrão para desenvolvimento; usa Brevo se estiver configurado no .env
+# Usa Brevo quando a chave estiver configurada e console no desenvolvimento local.
 EMAIL_BACKEND = config(
     'EMAIL_BACKEND', 
-    default='django.core.mail.backends.console.EmailBackend'
+    default=(
+        'anymail.backends.brevo.EmailBackend'
+        if config('BREVO_API_KEY', default='')
+        else 'django.core.mail.backends.console.EmailBackend'
+    )
 )
