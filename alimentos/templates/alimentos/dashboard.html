@@ -59,7 +59,7 @@
 <!-- SEÇÃO DE PRODUTOS EM FALTA OU EM ESTOQUE MÍNIMO -->
 <section class="row mt-4 mb-4">
     <div class="col-12">
-        <div class="card shadow-sm border-0 p-4" style="background-color: #fff; border-radius: 12px;">
+        <div class="card shadow-sm border-0 p-4" style="border-radius: 12px;">
             <div class="d-flex align-items-center mb-3">
                 <i class="bi bi-exclamation-triangle-fill text-danger fs-4 me-2"></i>
                 <h5 class="mb-0 fw-bold">Produtos em Falta ou em Estoque Mínimo</h5>
@@ -120,7 +120,7 @@
 <!-- Seção Inferior (Vencimento Próximo e Comece por aqui) -->
 <section class="dashboard-lower">
     <!-- Painel com o quadrado verde clarinho de fundo -->
-    <div class="quote-panel" style="background-color: #eaf4ed !important;">
+    <div class="quote-panel">
         <div class="d-flex align-items-center mb-3">
             <i class="bi bi-calendar-exclamation text-success fs-4 me-2"></i>
             <h5 class="mb-0 fw-bold text-success">Lotes Vencidos ou a Vencer (15 dias)</h5>
@@ -128,7 +128,7 @@
 
         {% if lotes_proximos_vencimento %}
             <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
-                <table class="table table-sm table-hover align-middle mb-0 bg-white rounded">
+                <table class="table table-sm table-hover align-middle mb-0 rounded">
                     <thead class="table-light">
                         <tr>
                             <th>Alimento</th>
@@ -166,7 +166,7 @@
                                         <i class="bi bi-exclamation-circle-fill me-1"></i> {{ lote.data_validade|date:"d/m/Y" }} (Vencido)
                                     </span>
                                 {% elif lote.data_validade == hoje %}
-                                    <span class="badge rounded-pill text-dark px-3 py-2 fw-bold shadow-sm" style="background-color: #fbbf24;">
+                                    <span class="badge badge-due-today rounded-pill px-3 py-2 fw-bold shadow-sm">
                                         <i class="bi bi-exclamation-triangle-fill me-1"></i> Vence Hoje
                                     </span>
                                 {% else %}

@@ -4,6 +4,10 @@
 
 {% block body %}
 <main class="auth-page">
+    <button id="darkModeToggle" class="auth-theme-toggle" type="button" aria-label="Ativar modo escuro" title="Ativar modo escuro">
+        <i class="bi bi-moon-fill" aria-hidden="true"></i>
+    </button>
+
     <div class="auth-brand">
         <!-- Exibe a Logo do Projeto se ela existir; caso contrário, exibe o ícone -->
         <img src="{% static 'alimentos/img/logo.png' %}" alt="Logo Stock Guardians" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
