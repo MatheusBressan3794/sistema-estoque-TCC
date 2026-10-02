@@ -34,7 +34,7 @@ urlpatterns = [
     path('relatorios/<str:tipo>/pdf/', views.exportar_pdf_movimentacoes, name='exportar_pdf_movimentacoes'),
     
 
-    path('ativar/<uidb64>/<token>/', views.ativar_conta, name='ativar_conta'),
+   path('ativar/<uidb64>/<token>/', views.ativar_conta, name='ativar_conta'),
 
     # Aprovação e gerenciamento de contas (diretora)
     path('contas/aprovar/', views.aprovar_contas, name='aprovar_contas'),

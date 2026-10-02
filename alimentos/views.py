@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
@@ -9,6 +9,9 @@ from django.db.models.functions import Coalesce
 from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from django.http import Http404, HttpResponse
+from django.contrib.auth.models import User
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -17,6 +20,8 @@ from reportlab.lib import colors
 
 from .models import Alimento, Lote, Movimentacao
 from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
+
+from .models import Alimento, Lote, Movimentacao, Perfil, Etec
 
 def logout_view(request):
     logout(request) 
@@ -29,6 +34,15 @@ def inicio(request):
 
 @login_required(login_url='login')
 def dashboard(request):
+    # Trava de segurança: Verifica se o utilizador tem perfil associado
+    if not hasattr(request.user, 'perfil'):
+        if request.user.is_superuser or request.user.is_staff:
+            return redirect('aprovar_contas')
+        else:
+            logout(request)
+            messages.error(request, "A sua conta não tem uma escola associada. Por favor, faça um novo registo.")
+            return redirect('login')
+        
     escola_usuario = request.user.perfil.etec
     
     alimentos_faltantes = Alimento.objects.filter(etec=escola_usuario).annotate(
@@ -59,6 +73,10 @@ def dashboard(request):
 # --- GESTÃO DE ALIMENTOS ---
 @login_required
 def listar_alimentos(request):
+    # Trava de segurança para administradores sem perfil de escola
+    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
+        return redirect('aprovar_contas')
+        
     escola_usuario = request.user.perfil.etec
     busca = request.GET.get('busca', '')
     
@@ -84,7 +102,6 @@ def listar_alimentos(request):
             'busca': busca
         }
     )
-
 @login_required
 def detalhes_alimento(request, id):
     escola_usuario = request.user.perfil.etec
@@ -199,22 +216,49 @@ def cadastro(request):
 
 def login_view(request):
     if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        # 1. Verifica se o utilizador existe e digitou a palavra-passe correta, mas está pendente (inativo)
+        if username and password:
+            try:
+                user_obj = User.objects.get(username=username)
+                if user_obj.check_password(password) and not user_obj.is_active:
+                    messages.warning(
+                        request, 
+                        "A sua conta foi criada com sucesso, mas ainda aguarda aprovação da coordenadora."
+                    )
+                    return redirect('login')
+            except User.DoesNotExist:
+                pass # Deixa cair no fluxo normal de erro se o utilizador não existir
+
+        # 2. Fluxo normal de login do Django para utilizadores ativos
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
+            
+            if (user.is_superuser or user.is_staff) and not hasattr(user, 'perfil'):
+                return redirect('aprovar_contas')
+                
             return redirect('dashboard')
         else:
             messages.error(request, 'Usuário ou senha incorretos.')
     else:
         form = AuthenticationForm()
+        
     return render(request, 'alimentos/login.html', {'form': form})
 
 
 # --- MOVIMENTAÇÃO DE ESTOQUE ---
 @login_required
 def movimentacao_estoque(request):
+    # Trava de segurança: Administrador global sem perfil é redirecionado para o painel de aprovações
+    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
+        return redirect('aprovar_contas')
+        
     escola_usuario = request.user.perfil.etec
+    
     if request.method == 'POST':
         form = MovimentacaoForm(request.POST)
 
@@ -225,7 +269,6 @@ def movimentacao_estoque(request):
             quantidade_pacotes = form.cleaned_data['quantidade']
             data_validade = form.cleaned_data.get('data_validade')
 
-            # Segurança Multitenancy: verificar se o alimento pertence à escola do utilizador
             if alimento.etec != escola_usuario:
                 messages.error(request, 'Operação inválida para a sua unidade escolar.')
                 return redirect('movimentacao_estoque')
@@ -292,8 +335,6 @@ def movimentacao_estoque(request):
         form = MovimentacaoForm()
 
     return render(request, 'alimentos/movimentacao.html', {'form': form})
-
-
 # --- ALERTAS E ESTOQUE MÍNIMO ---
 @login_required
 def alerta_estoque_minimo(request):
@@ -327,7 +368,6 @@ def relatorios(request):
 
 @login_required
 def relatorio_movimentacoes(request, tipo):
-    escola_usuario = request.user.perfil.etec
     tipos_validos = {
         'entradas': ('ENTRADA', 'Entradas', 'entrada'),
         'saidas': ('SAIDA', 'Saídas', 'saída'),
@@ -349,13 +389,28 @@ def relatorio_movimentacoes(request, tipo):
     except ValueError:
         data_fim = hoje
 
-    movimentacoes = (
-        Movimentacao.objects
-        .filter(lote__etec=escola_usuario, tipo=tipo_valor, data_movimentacao__range=(data_inicio, data_fim))
-        .select_related('lote', 'lote__alimento')
-        .order_by('-data_movimentacao', 'lote__alimento__nome')
-    )
+    etec_id = request.GET.get('etec', '')
+    etecs = None
 
+    # Queryset base
+    movimentacoes = Movimentacao.objects.filter(
+        tipo=tipo_valor, 
+        data_movimentacao__range=(data_inicio, data_fim)
+    ).select_related('lote', 'lote__alimento', 'lote__etec')
+
+    # Controlo de permissões e filtros
+    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
+        etecs = Etec.objects.all() # Lista todas as escolas para o admin escolher
+        if etec_id and etec_id.isdigit():
+            movimentacoes = movimentacoes.filter(lote__etec_id=etec_id)
+    elif hasattr(request.user, 'perfil') and request.user.perfil.etec:
+        escola_usuario = request.user.perfil.etec
+        movimentacoes = movimentacoes.filter(lote__etec=escola_usuario)
+    else:
+        messages.error(request, "Acesso não autorizado.")
+        return redirect('login')
+
+    movimentacoes = movimentacoes.order_by('-data_movimentacao', 'lote__alimento__nome')
     total_quantidade = movimentacoes.aggregate(total=Sum('quantidade'))['total'] or 0
 
     return render(
@@ -369,12 +424,13 @@ def relatorio_movimentacoes(request, tipo):
             'data_inicio': data_inicio,
             'data_fim': data_fim,
             'total_quantidade': total_quantidade,
+            'etecs': etecs,
+            'etec_selecionada': etec_id,
         }
     )
 
 @login_required
 def exportar_pdf_movimentacoes(request, tipo):
-    escola_usuario = request.user.perfil.etec
     tipos_validos = {
         'entradas': ('ENTRADA', 'Relatório de Entradas'),
         'saidas': ('SAIDA', 'Relatório de Saídas'),
@@ -396,12 +452,23 @@ def exportar_pdf_movimentacoes(request, tipo):
     except ValueError:
         data_fim = hoje
 
-    movimentacoes = (
-        Movimentacao.objects
-        .filter(lote__etec=escola_usuario, tipo=tipo_valor, data_movimentacao__range=(data_inicio, data_fim))
-        .select_related('lote', 'lote__alimento')
-        .order_by('-data_movimentacao', 'lote__alimento__nome')
-    )
+    etec_id = request.GET.get('etec', '')
+
+    movimentacoes = Movimentacao.objects.filter(
+        tipo=tipo_valor, 
+        data_movimentacao__range=(data_inicio, data_fim)
+    ).select_related('lote', 'lote__alimento', 'lote__etec')
+
+    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
+        if etec_id and etec_id.isdigit():
+            movimentacoes = movimentacoes.filter(lote__etec_id=etec_id)
+    elif hasattr(request.user, 'perfil') and request.user.perfil.etec:
+        escola_usuario = request.user.perfil.etec
+        movimentacoes = movimentacoes.filter(lote__etec=escola_usuario)
+    else:
+        raise Http404('Acesso não autorizado.')
+
+    movimentacoes = movimentacoes.order_by('-data_movimentacao', 'lote__alimento__nome')
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="relatorio_{tipo}_{data_inicio}_a_{data_fim}.pdf"'
@@ -472,3 +539,94 @@ def exportar_pdf_movimentacoes(request, tipo):
     doc.build(elementos)
 
     return response
+
+
+# --- GESTÃO DE CONTAS E APROVAÇÕES ---
+
+def is_coordenadora(user):
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+def ativar_conta(request, uidb64, token):
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "A sua conta foi ativada com sucesso! Já pode fazer login.")
+        return redirect('login')
+    else:
+        messages.error(request, "O link de ativação é inválido ou expirou.")
+        return redirect('login')
+
+@login_required
+@user_passes_test(is_coordenadora, login_url='/')
+def aprovar_contas(request):
+    # Usamos select_related para carregar o perfil e a ETEC de forma otimizada
+    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False).select_related('perfil', 'perfil__etec').order_by('-date_joined')
+    usuarios_aprovados = User.objects.filter(is_active=True, is_superuser=False).select_related('perfil', 'perfil__etec').order_by('username')
+    
+    contexto = {
+        'pendentes': usuarios_pendentes,
+        'aprovados': usuarios_aprovados
+    }
+    return render(request, 'alimentos/aprovar_contas.html', contexto)
+
+@login_required
+@user_passes_test(is_coordenadora)
+def aprovar_conta(request, id):
+    if request.method == 'POST':
+        usuario = get_object_or_404(User, id=id)
+        usuario.is_active = True  
+        usuario.save()
+        messages.success(request, f"A conta de {usuario.username} foi aprovada com sucesso!")
+    return redirect('aprovar_contas')
+
+@login_required
+@user_passes_test(is_coordenadora)
+def recusar_conta(request, id):
+    if request.method == 'POST':
+        usuario = get_object_or_404(User, id=id)
+        nome = usuario.username
+        usuario.delete()  
+        messages.error(request, f"A conta de {nome} foi rejeitada e removida do sistema.")
+    return redirect('aprovar_contas')
+
+@login_required
+@user_passes_test(is_coordenadora)
+def promover_admin(request, id):
+    if request.method == 'POST':
+        usuario = get_object_or_404(User, id=id)
+        usuario.is_staff = True  
+        usuario.save()
+        messages.success(request, f"O utilizador {usuario.username} foi promovido a Administrador com sucesso!")
+    return redirect('aprovar_contas')
+
+@login_required
+@user_passes_test(is_coordenadora)
+def rebaixar_admin(request, id):
+    if request.method == 'POST':
+        usuario = get_object_or_404(User, id=id)
+        if usuario != request.user:
+            usuario.is_staff = False  
+            usuario.save()
+            messages.warning(request, f"Os privilégios de administrador de {usuario.username} foram removidos.")
+        else:
+            messages.error(request, "Não pode remover os seus próprios privilégios de administrador.")
+    return redirect('aprovar_contas')
+
+@login_required
+@user_passes_test(is_coordenadora)
+def excluir_conta(request, id):
+    if request.method == 'POST':
+        usuario = get_object_or_404(User, id=id)
+        if usuario != request.user:
+            nome = usuario.username
+            usuario.delete()  
+            messages.error(request, f"A conta de {nome} foi excluída permanentemente do sistema.")
+        else:
+            messages.error(request, "Não pode excluir a sua própria conta ativa a partir deste painel.")
+    return redirect('aprovar_contas')

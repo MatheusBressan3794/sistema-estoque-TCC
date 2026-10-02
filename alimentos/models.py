@@ -127,11 +127,12 @@ class Movimentacao(models.Model):
     )
 
     def __str__(self):
-        return f"{this.tipo} - {self.lote.alimento.nome}"
+        # Corrigido de 'this.tipo' para 'self.tipo'
+        return f"{self.tipo} - {self.lote.alimento.nome}"
 
 
 # --- 5. PERFIL DO UTILIZADOR (Vinculado à ETEC) ---
-class PerfilUsuario(models.Model):
+class Perfil(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,

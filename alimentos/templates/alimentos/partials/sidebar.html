@@ -10,19 +10,24 @@
     <div class="sidebar-label">Navegação</div>
     <nav class="sidebar-nav" aria-label="Navegação principal">
         
-        <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i> Visão geral</a>
+        <!-- Visão geral, Estoque e Movimentação aparecem apenas para usuários comuns / operadores com perfil de escola -->
+        {% if not request.user.is_superuser and not request.user.is_staff or request.user.perfil %}
+            <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="bi bi-grid-1x2-fill"></i> Visão geral</a>
 
-        <a href="{% url 'listar_alimentos' %}" class="nav-link {% if request.resolver_match.url_name == 'listar_alimentos' %}active{% endif %}"><i class="bi bi-boxes"></i> Estoque</a>
+            <a href="{% url 'listar_alimentos' %}" class="nav-link {% if request.resolver_match.url_name == 'listar_alimentos' %}active{% endif %}"><i class="bi bi-boxes"></i> Estoque</a>
 
-        <a href="{% url 'movimentacao_estoque' %}" class="nav-link {% if request.resolver_match.url_name == 'movimentacao_estoque' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Movimentação</a>
+            <a href="{% url 'movimentacao_estoque' %}" class="nav-link {% if request.resolver_match.url_name == 'movimentacao_estoque' %}active{% endif %}"><i class="bi bi-arrow-left-right"></i> Movimentação</a>
+        {% endif %}
 
+        <!-- Relatórios (visível para todos os perfis autorizados) -->
         <a href="{% url 'relatorios' %}" class="nav-link {% if request.resolver_match.url_name == 'relatorios' %}active{% endif %}"><i class="bi bi-bar-chart-line"></i> Relatórios</a>
 
-    {% if request.user.is_staff %}
-        <a href="{% url 'aprovar_contas' %}" class="nav-link">
-            Gerenciar Usuários
-        </a>
-{% endif %}
+        <!-- Gerenciar Usuários (visível exclusivamente para administradores / staff) -->
+        {% if request.user.is_superuser or request.user.is_staff %}
+            <a href="{% url 'aprovar_contas' %}" class="nav-link {% if request.resolver_match.url_name == 'aprovar_contas' %}active{% endif %}">
+                <i class="bi bi-people-fill"></i> Gerenciar Usuários
+            </a>
+        {% endif %}
     </nav>
     <div class="sidebar-bottom">
         <div class="support-box"><i class="bi bi-lightbulb"></i><div><strong>Dica rápida</strong><span>Mantenha as validades sempre atualizadas.</span></div></div>
