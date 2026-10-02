@@ -11,13 +11,27 @@ document.addEventListener('DOMContentLoaded', function () {
     // 2. Lógica do Modo Noturno
     const toggleButton = document.getElementById('darkModeToggle');
     const body = document.body;
+    const updateThemeButton = (isDark) => {
+        if (!toggleButton) return;
+
+        if (toggleButton.classList.contains('auth-theme-toggle')) {
+            const icon = isDark ? 'bi-sun-fill' : 'bi-moon-fill';
+            const label = isDark ? 'Ativar modo claro' : 'Ativar modo escuro';
+            toggleButton.innerHTML = `<i class="bi ${icon}" aria-hidden="true"></i>`;
+            toggleButton.setAttribute('aria-label', label);
+            toggleButton.title = label;
+            return;
+        }
+
+        toggleButton.innerHTML = isDark
+            ? '<i class="bi bi-sun-fill me-1"></i> Modo Claro'
+            : '<i class="bi bi-moon-fill me-1"></i> Modo Noturno';
+    };
 
     // Verificar preferência guardada anteriormente no navegador
     if (localStorage.getItem('theme') === 'dark') {
         body.classList.add('dark-mode');
-        if (toggleButton) {
-            toggleButton.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Modo Claro';
-        }
+        updateThemeButton(true);
     }
 
     if (toggleButton) {
@@ -26,10 +40,10 @@ document.addEventListener('DOMContentLoaded', function () {
             
             if (body.classList.contains('dark-mode')) {
                 localStorage.setItem('theme', 'dark');
-                toggleButton.innerHTML = '<i class="bi bi-sun-fill me-1"></i> Modo Claro';
+                updateThemeButton(true);
             } else {
                 localStorage.setItem('theme', 'light');
-                toggleButton.innerHTML = '<i class="bi bi-moon-fill me-1"></i> Modo Noturno';
+                updateThemeButton(false);
             }
         });
     }
