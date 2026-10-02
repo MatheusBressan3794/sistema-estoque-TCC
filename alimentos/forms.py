@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Alimento, Lote, Movimentacao, Etec 
+from .models import Alimento, Lote, Movimentacao, Etec, Perfil 
 
 # Cadastro de alimentos (Usado para Edição)
 class AlimentoForm(forms.ModelForm):
@@ -153,16 +153,15 @@ class MovimentacaoForm(forms.Form):
     )
 
 
-# Criar conta (JUNTÁMOS TUDO AQUI!)
+# Criar conta com associação correta da ETEC e Perfil
 class CriarContaForm(UserCreationForm):
     
-    # Campo da ETEC que estava separado
     etec = forms.ModelChoiceField(
         queryset=Etec.objects.all(),
         required=True,
         label="Selecione a sua ETEC",
         empty_label="Escolha uma escola...",
-        widget=forms.Select(attrs={'class': 'form-control'}) # Aplica o estilo do Bootstrap
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
 
     first_name = forms.CharField(
@@ -183,3 +182,16 @@ class CriarContaForm(UserCreationForm):
         self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Escolha um nome de usuário'})
         self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Crie uma senha segura'})
         self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Confirme sua senha'})
+
+    def save(self, commit=True):
+        # 1. Cria o utilizador mas define is_active = False para nascer pendente de aprovação
+        user = super().save(commit=False)
+        user.is_active = False  
+        
+        if commit:
+            user.save()
+            # 2. Pega a ETEC escolhida no formulário e cria automaticamente o Perfil vinculado
+            etec_escolhida = self.cleaned_data.get('etec')
+            Perfil.objects.create(user=user, etec=etec_escolhida)
+            
+        return user

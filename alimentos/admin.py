@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Alimento, Lote, Movimentacao, PerfilUsuario, Etec # Adicione o Etec aqui
+from .models import Alimento, Lote, Movimentacao, Perfil, Etec
 
 admin.site.register(Etec)
-# ... (os restantes registos que já tem)
+admin.site.register(Alimento)
+admin.site.register(Lote)
+admin.site.register(Movimentacao)
+admin.site.register(Perfil)

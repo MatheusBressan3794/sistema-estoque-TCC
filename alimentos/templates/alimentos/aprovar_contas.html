@@ -16,6 +16,7 @@
                         <tr>
                             <th>Nome</th>
                             <th>E-mail</th>
+                            <th>Escola (ETEC)</th>
                             <th>Data de Cadastro</th>
                             <th>Ações</th>
                         </tr>
@@ -25,6 +26,13 @@
                             <tr>
                                 <td>{{ usuario.first_name|default:usuario.username }}</td>
                                 <td>{{ usuario.email }}</td>
+                                <td>
+                                    {% if usuario.perfil and usuario.perfil.etec %}
+                                        {{ usuario.perfil.etec.nome }}
+                                    {% else %}
+                                        <span class="text-muted">Sem escola</span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ usuario.date_joined|date:"d/m/Y H:i" }}</td>
                                 <td>
                                     <form action="{% url 'aprovar_conta' usuario.id %}" method="post" style="display:inline;">
@@ -58,6 +66,7 @@
                         <tr>
                             <th>Nome</th>
                             <th>E-mail</th>
+                            <th>Escola (ETEC)</th>
                             <th>Status</th>
                             <th>Ações</th>
                         </tr>
@@ -67,6 +76,13 @@
                             <tr>
                                 <td>{{ usuario.first_name|default:usuario.username }}</td>
                                 <td>{{ usuario.email }}</td>
+                                <td>
+                                    {% if usuario.perfil and usuario.perfil.etec %}
+                                        {{ usuario.perfil.etec.nome }}
+                                    {% else %}
+                                        <span class="text-muted">Sem escola</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if usuario.is_staff %}
                                         <span class="badge bg-primary">Administrador</span>
@@ -88,7 +104,6 @@
                                                 <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Remover os privilégios de administrador deste usuário?')">Remover Admin</button>
                                             </form>
                                         {% else %}
-                                            <!-- Mostra um botão desativado para o próprio usuário logado -->
                                             <button class="btn btn-secondary btn-sm" disabled>Você</button>
                                         {% endif %}
                                     {% endif %}

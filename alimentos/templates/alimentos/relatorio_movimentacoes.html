@@ -32,15 +32,30 @@
                    name="data_fim" value="{{ data_fim|date:'Y-m-d' }}">
         </div>
 
+        <!-- Se for Administrador Global, exibe o seletor de ETEC -->
+        {% if etecs %}
+        <div class="col-auto">
+            <label for="id_etec" class="form-label">Filtrar por ETEC</label>
+            <select name="etec" id="id_etec" class="form-select">
+                <option value="">Todas as ETECs</option>
+                {% for escola in etecs %}
+                    <option value="{{ escola.id }}" {% if etec_selecionada == escola.id|stringformat:"s" %}selected{% endif %}>
+                        {{ escola.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
         <div class="col-auto">
             <button type="submit" class="btn btn-primary-custom">
                 <i class="bi bi-funnel"></i> Filtrar
             </button>
         </div>
 
-        <!-- Botão para Baixar o PDF filtrado -->
+        <!-- Botão para Baixar o PDF filtrado (mantém o filtro da ETEC selecionada) -->
         <div class="col-auto">
-            <a href="{% url 'exportar_pdf_movimentacoes' tipo %}?data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}" class="btn btn-secondary" target="_blank">
+            <a href="{% url 'exportar_pdf_movimentacoes' tipo %}?data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}{% if etec_selecionada %}&etec={{ etec_selecionada }}{% endif %}" class="btn btn-secondary" target="_blank">
                 <i class="bi bi-file-earmark-pdf"></i> Baixar PDF
             </a>
         </div>
@@ -58,6 +73,9 @@
             <thead>
                 <tr>
                     <th>Data</th>
+                    {% if etecs %}
+                        <th>ETEC</th>
+                    {% endif %}
                     <th>Alimento</th>
                     <th>Lote</th>
                     <th class="text-end">Quantidade</th>
@@ -69,12 +87,16 @@
                 {% for mov in movimentacoes %}
                 <tr>
                     <td>{{ mov.data_movimentacao|date:"d/m/Y" }}</td>
+                    
+                    {% if etecs %}
+                        <td>{{ mov.lote.etec.nome|default:"-" }}</td>
+                    {% endif %}
+
                     <td>{{ mov.lote.alimento.nome }}</td>
                     <td>{{ mov.lote.numero_lote }}</td>
                     <td class="text-end">
                         {% with alimento=mov.lote.alimento %}
                             {% if alimento.quantidade_embalagem and alimento.quantidade_embalagem > 0 %}
-                                <!-- Exibe a quantidade de pacotes/vidros inteiros e entre parênteses o valor total em kg/ml -->
                                 <span class="fw-bold">
                                     {% widthratio mov.quantidade alimento.quantidade_embalagem 1 %} {{ alimento.get_embalagem_display }}s
                                 </span>
@@ -91,7 +113,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="empty-state">
+                    <td colspan="{% if etecs %}5{% else %}4{% endif %}" class="empty-state">
                         <i class="bi bi-inbox"></i>
                         <strong>Nenhuma movimentação encontrada</strong>
                         <span>Ajuste o período ou registre uma nova movimentação.</span>
