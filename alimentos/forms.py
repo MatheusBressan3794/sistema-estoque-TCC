@@ -177,21 +177,24 @@ class CriarContaForm(UserCreationForm):
         model = User
         fields = ['first_name', 'username', 'email']
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Escolha um nome de usuário'})
-        self.fields['password1'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Crie uma senha segura'})
-        self.fields['password2'].widget.attrs.update({'class': 'form-control', 'placeholder': 'Confirme sua senha'})
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("Este e-mail já está cadastrado no sistema. Por favor, utilize outro ou faça login.")
+        return email
 
     def save(self, commit=True):
-        # 1. Cria o utilizador mas define is_active = False para nascer pendente de aprovação
         user = super().save(commit=False)
-        user.is_active = False  
+        user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name']
         
         if commit:
             user.save()
-            # 2. Pega a ETEC escolhida no formulário e cria automaticamente o Perfil vinculado
-            etec_escolhida = self.cleaned_data.get('etec')
-            Perfil.objects.create(user=user, etec=etec_escolhida)
-            
+            Perfil.objects.update_or_create(
+                user=user,
+                defaults={
+                    'etec': self.cleaned_data['etec'],
+                    'email_verificado': False
+                }
+            )
         return user

@@ -10,18 +10,20 @@ from django.db.models.deletion import ProtectedError
 from django.utils import timezone
 from django.http import Http404, HttpResponse
 from django.contrib.auth.models import User
-from django.utils.http import urlsafe_base64_decode
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_str, force_bytes
 from django.contrib.auth.tokens import default_token_generator
+from django.template.loader import render_to_string
+from django.core.mail import EmailMessage
+from django.urls import reverse
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-from .models import Alimento, Lote, Movimentacao
-from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
-
 from .models import Alimento, Lote, Movimentacao, Perfil, Etec
+from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
 
 def logout_view(request):
     logout(request) 
@@ -102,6 +104,7 @@ def listar_alimentos(request):
             'busca': busca
         }
     )
+
 @login_required
 def detalhes_alimento(request, id):
     escola_usuario = request.user.perfil.etec
@@ -207,8 +210,25 @@ def cadastro(request):
     if request.method == 'POST':
         form = CriarContaForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Conta criada com sucesso! Faça login para entrar.')
+            form.instance.is_active = False
+            user = form.save()
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            activation_url = request.build_absolute_uri(
+                reverse('ativar_conta', kwargs={'uidb64': uid, 'token': token})
+            )
+            mail_subject = 'Confirme o seu email - Stock Guardians'
+            message = render_to_string('alimentos/email_verificacao.html', {
+                'user': user,
+                'uid': uid,
+                'token': token,
+                'activation_url': activation_url,
+            })
+            email = EmailMessage(mail_subject, message, to=[user.email])
+            email.content_subtype = 'html'
+            email.send()
+
+            messages.success(request, 'Conta criada! Confirme o seu e-mail para entrar na fila de aprovação da coordenadora.')
             return redirect('login')
     else:
         form = CriarContaForm()
@@ -224,10 +244,11 @@ def login_view(request):
             try:
                 user_obj = User.objects.get(username=username)
                 if user_obj.check_password(password) and not user_obj.is_active:
-                    messages.warning(
-                        request, 
-                        "A sua conta foi criada com sucesso, mas ainda aguarda aprovação da coordenadora."
-                    )
+                    perfil = getattr(user_obj, 'perfil', None)
+                    if not perfil or not perfil.email_verificado:
+                        messages.warning(request, "Aguardando confirmação de e-mail")
+                    else:
+                        messages.warning(request, "Aguardando aprovação da coordenadora")
                     return redirect('login')
             except User.DoesNotExist:
                 pass # Deixa cair no fluxo normal de erro se o utilizador não existir
@@ -450,7 +471,7 @@ def exportar_pdf_movimentacoes(request, tipo):
     try:
         data_fim = date.fromisoformat(request.GET.get('data_fim', str(hoje)))
     except ValueError:
-        data_fim = hoje
+        data_fim = data_inicio
 
     etec_id = request.GET.get('etec', '')
 
@@ -548,15 +569,17 @@ def is_coordenadora(user):
 
 def ativar_conta(request, uidb64, token):
     try:
-        uid = urlsafe_base64_decode(uidb64).decode()
+        uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
     if user is not None and default_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save()
-        messages.success(request, "A sua conta foi ativada com sucesso! Já pode fazer login.")
+        perfil, _ = Perfil.objects.get_or_create(user=user)
+        perfil.email_verificado = True
+        perfil.save(update_fields=['email_verificado'])
+            
+        messages.success(request, "Email confirmado com sucesso! A sua conta encontra-se agora na fila para ser aprovada pela coordenadora.")
         return redirect('login')
     else:
         messages.error(request, "O link de ativação é inválido ou expirou.")
@@ -566,7 +589,8 @@ def ativar_conta(request, uidb64, token):
 @user_passes_test(is_coordenadora, login_url='/')
 def aprovar_contas(request):
     # Usamos select_related para carregar o perfil e a ETEC de forma otimizada
-    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False).select_related('perfil', 'perfil__etec').order_by('-date_joined')
+    # Só exibe contas pendentes que já validaram o email
+    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False, perfil__email_verificado=True).select_related('perfil', 'perfil__etec').order_by('-date_joined')
     usuarios_aprovados = User.objects.filter(is_active=True, is_superuser=False).select_related('perfil', 'perfil__etec').order_by('username')
     
     contexto = {

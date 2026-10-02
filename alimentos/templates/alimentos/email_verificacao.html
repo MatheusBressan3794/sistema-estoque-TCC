@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="pt-br">
+<body>
+    <p>Ola, {{ user.first_name|default:user.username }}.</p>
+    <p>Para confirmar o seu endereco de e-mail e enviar a conta para aprovacao, acesse:</p>
+    <p><a href="{{ activation_url }}">Confirmar e-mail</a></p>
+    <p>Se o link nao funcionar, copie este endereco para o navegador:</p>
+    <p>{{ activation_url }}</p>
+    <p>Identificadores: uid={{ uid }} e token={{ token }}</p>
+</body>
+</html>
