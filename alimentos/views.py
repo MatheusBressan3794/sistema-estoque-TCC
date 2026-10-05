@@ -30,7 +30,6 @@ def logout_view(request):
     return redirect('login')
 
 # --- PÁGINAS GERAIS E DASHBOARD ---
-@login_required
 def inicio(request):
     return render(request, 'alimentos/inicio.html')
 

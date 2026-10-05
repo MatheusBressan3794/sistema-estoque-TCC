@@ -2,126 +2,137 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Gerenciamento de Usuários</h2>
+    <!-- Cabeçalho alinhado com o estilo da tela de Relatórios -->
+    <div class="mb-5">
+        <span class="text-uppercase" style="color: #ff5722; font-size: 0.75rem; font-weight: 600; letter-spacing: 1px;">Controle de Acessos</span>
+        <h2 class="fw-bold mt-1 mb-2">Gerenciamento de Usuários</h2>
+        <p class="text-muted">Aprove solicitações e gerencie permissões do sistema.</p>
+    </div>
 
     <!-- Seção de Solicitações Pendentes -->
-    <div class="card mb-5">
-        <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0">Solicitações de Acesso Pendentes</h4>
-        </div>
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-4 mb-5">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Solicitações de Acesso Pendentes</h5>
+            
             {% if pendentes %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Escola (ETEC)</th>
-                            <th>Data de Cadastro</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for usuario in pendentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-bottom-0">
+                        <thead class="text-muted" style="font-size: 0.9rem;">
                             <tr>
-                                <td>{{ usuario.first_name|default:usuario.username }}</td>
-                                <td>{{ usuario.email }}</td>
-                                <td>
-                                    {% if usuario.perfil and usuario.perfil.etec %}
-                                        {{ usuario.perfil.etec.nome }}
-                                    {% else %}
-                                        <span class="text-muted">Sem escola</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ usuario.date_joined|date:"d/m/Y H:i" }}</td>
-                                <td>
-                                    <form action="{% url 'aprovar_conta' usuario.id %}" method="post" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-success btn-sm">Aprovar</button>
-                                    </form>
-                                    <form action="{% url 'recusar_conta' usuario.id %}" method="post" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja recusar e excluir este usuário?')">Recusar</button>
-                                    </form>
-                                </td>
+                                <th class="border-0 pb-3">Nome</th>
+                                <th class="border-0 pb-3">E-mail</th>
+                                <th class="border-0 pb-3">Escola (ETEC)</th>
+                                <th class="border-0 pb-3">Data de Cadastro</th>
+                                <th class="border-0 pb-3 text-end">Ações</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for usuario in pendentes %}
+                                <tr>
+                                    <td class="fw-semibold text-dark">{{ usuario.first_name|default:usuario.username }}</td>
+                                    <td class="text-muted">{{ usuario.email }}</td>
+                                    <td>
+                                        {% if usuario.perfil and usuario.perfil.etec %}
+                                            <span class="text-dark">{{ usuario.perfil.etec.nome }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Sem escola</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-muted">{{ usuario.date_joined|date:"d/m/Y H:i" }}</td>
+                                    <td class="text-end">
+                                        <form action="{% url 'aprovar_conta' usuario.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm text-white rounded-pill px-3" style="background-color: #ff5722; border: none;">Aprovar</button>
+                                        </form>
+                                        <form action="{% url 'recusar_conta' usuario.id %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-light text-danger rounded-pill px-3 ms-1" onclick="return confirm('Tem certeza que deseja recusar e excluir este usuário?')">Recusar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-                <p class="text-muted">Não há solicitações de acesso pendentes no momento.</p>
+                <div class="p-4 text-center bg-light rounded-3 border">
+                    <p class="text-muted mb-0">Não há solicitações de acesso pendentes no momento.</p>
+                </div>
             {% endif %}
         </div>
     </div>
 
     <!-- Seção de Usuários Cadastrados -->
-    <div class="card">
-        <div class="card-header bg-info text-white">
-            <h4 class="mb-0">Usuários Ativos no Sistema</h4>
-        </div>
-        <div class="card-body">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Usuários Ativos no Sistema</h5>
+            
             {% if aprovados %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>E-mail</th>
-                            <th>Escola (ETEC)</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for usuario in aprovados %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle border-bottom-0">
+                        <thead class="text-muted" style="font-size: 0.9rem;">
                             <tr>
-                                <td>{{ usuario.first_name|default:usuario.username }}</td>
-                                <td>{{ usuario.email }}</td>
-                                <td>
-                                    {% if usuario.perfil and usuario.perfil.etec %}
-                                        {{ usuario.perfil.etec.nome }}
-                                    {% else %}
-                                        <span class="text-muted">Sem escola</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if usuario.is_staff %}
-                                        <span class="badge bg-primary">Administrador</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Usuário Comum</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <!-- Lógica para o botão Promover/Remover Admin -->
-                                    {% if not usuario.is_staff %}
-                                        <form action="{% url 'promover_admin' usuario.id %}" method="post" style="display:inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="return confirm('Tornar este usuário um administrador?')">Tornar Admin</button>
-                                        </form>
-                                    {% else %}
-                                        {% if usuario != request.user %}
-                                            <form action="{% url 'rebaixar_admin' usuario.id %}" method="post" style="display:inline;">
+                                <th class="border-0 pb-3">Nome</th>
+                                <th class="border-0 pb-3">E-mail</th>
+                                <th class="border-0 pb-3">Escola (ETEC)</th>
+                                <th class="border-0 pb-3">Status</th>
+                                <th class="border-0 pb-3 text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for usuario in aprovados %}
+                                <tr>
+                                    <td class="fw-semibold text-dark">{{ usuario.first_name|default:usuario.username }}</td>
+                                    <td class="text-muted">{{ usuario.email }}</td>
+                                    <td>
+                                        {% if usuario.perfil and usuario.perfil.etec %}
+                                            <span class="text-dark">{{ usuario.perfil.etec.nome }}</span>
+                                        {% else %}
+                                            <span class="text-muted">Sem escola</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if usuario.is_staff %}
+                                            <span class="badge bg-primary rounded-pill px-3 py-2 fw-normal">Administrador</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary rounded-pill px-3 py-2 fw-normal">Usuário Comum</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Lógica para o botão Promover/Remover Admin -->
+                                        {% if not usuario.is_staff %}
+                                            <form action="{% url 'promover_admin' usuario.id %}" method="post" style="display:inline;">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Remover os privilégios de administrador deste usuário?')">Remover Admin</button>
+                                                <button type="submit" class="btn btn-link text-decoration-none btn-sm fw-semibold" style="color: #0d6efd;" onclick="return confirm('Tornar este usuário um administrador?')">Tornar Admin</button>
                                             </form>
                                         {% else %}
-                                            <button class="btn btn-secondary btn-sm" disabled>Você</button>
+                                            {% if usuario != request.user %}
+                                                <form action="{% url 'rebaixar_admin' usuario.id %}" method="post" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-link text-decoration-none btn-sm fw-semibold text-warning" onclick="return confirm('Remover os privilégios de administrador deste usuário?')">Remover Admin</button>
+                                                </form>
+                                            {% else %}
+                                                <button class="btn btn-link text-decoration-none text-muted btn-sm fw-semibold" disabled>Você</button>
+                                            {% endif %}
                                         {% endif %}
-                                    {% endif %}
-                                
-                                    <!-- Lógica para o botão Excluir Conta -->
-                                    {% if usuario != request.user %}
-                                        <form action="{% url 'excluir_conta' usuario.id %}" method="post" style="display:inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('ATENÇÃO: Deseja realmente excluir esta conta? Essa ação não pode ser desfeita.')">Excluir Conta</button>
-                                        </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                    
+                                        <!-- Lógica para o botão Excluir Conta -->
+                                        {% if usuario != request.user %}
+                                            <form action="{% url 'excluir_conta' usuario.id %}" method="post" style="display:inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm rounded-pill px-3 ms-2 text-white" style="background-color: #dc3545;" onclick="return confirm('ATENÇÃO: Deseja realmente excluir esta conta? Essa ação não pode ser desfeita.')">Excluir</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-                <p class="text-muted">Nenhum usuário comum ativo encontrado.</p>
+                <div class="p-4 text-center bg-light rounded-3 border">
+                    <p class="text-muted mb-0">Nenhum usuário comum ativo encontrado.</p>
+                </div>
             {% endif %}
         </div>
     </div>
