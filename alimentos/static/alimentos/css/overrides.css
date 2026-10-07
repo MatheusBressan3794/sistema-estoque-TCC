@@ -643,3 +643,58 @@ body.dark-mode .auth-theme-toggle:hover {
     background-color: #202833;
     color: #ff9a70;
 }
+
+/* --- RESPONSIVIDADE DA SIDEBAR (MOBILE OFF-CANVAS) --- */
+@media (max-width: 991.98px) {
+    .app-layout {
+        position: relative;
+        overflow-x: hidden;
+    }
+    
+    /* A sidebar fica escondida fora do ecrã à esquerda */
+    .app-layout .sidebar,
+    .app-layout aside {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        z-index: 1050;
+        transition: left 0.3s ease-in-out;
+    }
+
+    /* Quando a classe sidebar-expanded é ativada pelo JS, ela desliza para dentro */
+    .app-layout.sidebar-expanded .sidebar,
+    .app-layout.sidebar-expanded aside {
+        left: 0;
+    }
+
+    /* Barra superior mobile */
+    .mobile-topbar {
+        background-color: var(--bs-body-bg, #ffffff);
+        position: sticky;
+        top: 0;
+        z-index: 1040;
+    }
+}
+
+/* --- DARK MODE ESTILIZADO (PROFISSIONAL) --- */
+body.dark-mode {
+    background-color: #0f1117 !important;
+    color: #e2e8f0 !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .box,
+body.dark-mode .table-container,
+body.dark-mode .mobile-topbar {
+    background-color: #161b22 !important;
+    border-color: #30363d !important;
+    color: #e2e8f0 !important;
+}
+
+body.dark-mode .sidebar,
+body.dark-mode aside {
+    background-color: #161b22 !important;
+    border-right: 1px solid #30363d !important;
+}

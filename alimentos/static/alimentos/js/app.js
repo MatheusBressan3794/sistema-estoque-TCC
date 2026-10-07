@@ -1,16 +1,35 @@
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Lógica da Sidebar
+    // 1. Lógica da Sidebar Responsiva (Mobile / Toggle)
     const sidebar = document.querySelector('#app-sidebar');
     const toggle = document.querySelector('[data-sidebar-toggle]');
+    const appLayout = document.querySelector('#appLayout');
+
     if (sidebar && toggle) {
         toggle.addEventListener('click', function () {
             sidebar.classList.toggle('is-open');
+            if (appLayout) {
+                appLayout.classList.toggle('sidebar-expanded');
+            }
+        });
+
+        // Opcional: Fecha a sidebar ao clicar fora em ecrãs móveis
+        document.addEventListener('click', function (event) {
+            if (window.innerWidth < 992) {
+                const isClickInside = sidebar.contains(event.target) || toggle.contains(event.target);
+                if (!isClickInside && sidebar.classList.contains('is-open')) {
+                    sidebar.classList.remove('is-open');
+                    if (appLayout) {
+                        appLayout.classList.remove('sidebar-expanded');
+                    }
+                }
+            }
         });
     }
 
-    // 2. Lógica do Modo Noturno
+    // 2. Lógica do Modo Noturno (Dark Mode) com persistência em localStorage
     const toggleButton = document.getElementById('darkModeToggle');
     const body = document.body;
+
     const updateThemeButton = (isDark) => {
         if (!toggleButton) return;
 
