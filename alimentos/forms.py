@@ -76,6 +76,7 @@ class CriarAlimentoForm(AlimentoForm):
     )
     
 
+
 # Editar lote
 class LoteForm(forms.ModelForm):
     class Meta:
@@ -93,6 +94,14 @@ class LoteForm(forms.ModelForm):
             raise forms.ValidationError("A quantidade não pode ser negativa.")
         return quantidade
 
+# Select de lotes que guarda de qual alimento é cada lote (o JavaScript usa isso pra filtrar)
+class LoteSelect(forms.Select):
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex=subindex, attrs=attrs)
+        instance = getattr(value, 'instance', None)
+        if instance is not None:
+            option['attrs']['data-alimento'] = instance.alimento_id
+        return option
 
 # Movimentação do estoque (lotes)
 class MovimentacaoForm(forms.Form):
@@ -122,14 +131,28 @@ class MovimentacaoForm(forms.Form):
         )
     )
 
+        # Lote que já existe (obrigatório na saída; na entrada pode ser trocado por um lote novo)
     numero_lote = forms.ModelChoiceField(
-        label='Número do lote',
-        queryset=Lote.objects.filter(quantidade_atual__gt=0),
+        label='Lote existente',
+        queryset=Lote.objects.filter(quantidade_atual__gt=0).select_related('alimento'),
         empty_label='Selecione um lote',
-        required=True,
-        widget=forms.Select(
+        required=False,
+        widget=LoteSelect(
             attrs={
                 'class': 'form-control'
+            }
+        )
+    )
+
+    # Só na entrada: número de um lote novo, digitado pela pessoa
+    novo_lote = forms.CharField(
+        label='Ou digite um novo lote',
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex.: LOTE-003'
             }
         )
     )
@@ -151,6 +174,55 @@ class MovimentacaoForm(forms.Form):
         required=False,  # Essencial para não obrigar na saída
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
+
+        # Mostra só os alimentos e lotes da ETEC de quem está logado
+    def __init__(self, *args, etec=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if etec is not None:
+            self.fields['alimento'].queryset = Alimento.objects.filter(etec=etec)
+            self.fields['numero_lote'].queryset = Lote.objects.filter(
+                etec=etec, quantidade_atual__gt=0
+            ).select_related('alimento')
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo')
+        alimento = cleaned.get('alimento')
+        lote = cleaned.get('numero_lote')
+        novo_lote = (cleaned.get('novo_lote') or '').strip()
+        data_validade = cleaned.get('data_validade')
+        cleaned['novo_lote'] = novo_lote
+
+        # Se tipo ou alimento estiverem inválidos, o erro deles já aparece sozinho
+        if not tipo or not alimento:
+            return cleaned
+
+        if tipo == 'SAIDA':
+            if not lote:
+                self.add_error('numero_lote', 'Selecione o lote de onde as embalagens vão sair.')
+                
+            elif lote.alimento_id != alimento.id:
+                self.add_error('numero_lote', 'Esse lote não pertence ao alimento selecionado.')
+
+        elif tipo == 'ENTRADA':
+            if lote and novo_lote:
+                self.add_error('novo_lote', 'Escolha um lote existente OU digite um novo, não os dois.')
+
+            elif not lote and not novo_lote:
+                self.add_error('numero_lote', 'Selecione um lote existente ou digite um lote novo.')
+
+            elif lote and lote.alimento_id != alimento.id:
+                self.add_error('numero_lote', 'Esse lote não pertence ao alimento selecionado.')
+
+            elif novo_lote:
+                ja_existe = Lote.objects.filter(
+                    alimento=alimento, numero_lote=novo_lote
+                ).exists()
+                
+                if not ja_existe and not data_validade:
+                    self.add_error('data_validade', 'Informe a data de validade para criar um lote novo.')
+
+        return cleaned
 
 
 # Criar conta com associação correta da ETEC e Perfil

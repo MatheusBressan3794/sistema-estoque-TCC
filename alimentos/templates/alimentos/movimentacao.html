@@ -39,10 +39,16 @@
             {{ form.alimento.errors }}
         </div>
 
-        <div class="form-group">
+        <div class="form-group" id="grupo-lote-existente">
             {{ form.numero_lote.label_tag }}
             {{ form.numero_lote }}
             {{ form.numero_lote.errors }}
+        </div>
+
+        <div class="form-group" id="grupo-novo-lote">
+            {{ form.novo_lote.label_tag }}
+            {{ form.novo_lote }}
+            {{ form.novo_lote.errors }}
         </div>
 
         <div class="form-group">

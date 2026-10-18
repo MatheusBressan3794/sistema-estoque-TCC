@@ -91,7 +91,7 @@ def listar_alimentos(request):
         alimento.total_estoque = total_qnt
         
         if alimento.quantidade_embalagem and alimento.quantidade_embalagem > 0:
-            alimento.pacotes_totais = total_qnt / alimento.quantidade_embalagem
+            alimento.pacotes_totais = total_qnt / float(alimento.quantidade_embalagem)
         else:
             alimento.pacotes_totais = 0.0
 
@@ -280,7 +280,7 @@ def movimentacao_estoque(request):
     escola_usuario = request.user.perfil.etec
     
     if request.method == 'POST':
-        form = MovimentacaoForm(request.POST)
+        form = MovimentacaoForm(request.POST, etec=escola_usuario)
 
         if form.is_valid():
             tipo = form.cleaned_data['tipo']
@@ -288,6 +288,7 @@ def movimentacao_estoque(request):
             lote_selecionado = form.cleaned_data['numero_lote']
             quantidade_pacotes = form.cleaned_data['quantidade']
             data_validade = form.cleaned_data.get('data_validade')
+            novo_lote = form.cleaned_data.get('novo_lote')
 
             if alimento.etec != escola_usuario:
                 messages.error(request, 'Operação inválida para a sua unidade escolar.')
@@ -325,7 +326,7 @@ def movimentacao_estoque(request):
                     lote.quantidade_atual += quantidade_real_estoque
                     lote.save()
                 else:
-                    numero_lote_str = str(lote_selecionado)
+                    numero_lote_str = novo_lote
                     lote = Lote.objects.filter(etec=escola_usuario, alimento=alimento, numero_lote=numero_lote_str).first()
                     if lote:
                         lote.quantidade_atual += quantidade_real_estoque
@@ -352,7 +353,7 @@ def movimentacao_estoque(request):
                 messages.success(request, 'Entrada registrada com sucesso!')
                 return redirect('movimentacao_estoque')
     else:
-        form = MovimentacaoForm()
+        form = MovimentacaoForm(etec=escola_usuario)
 
     return render(request, 'alimentos/movimentacao.html', {'form': form})
 # --- ALERTAS E ESTOQUE MÍNIMO ---
