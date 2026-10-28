@@ -2,17 +2,7 @@ from django.db import models
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import User
 
-# --- 1. TABELA DE ESCOLAS (ETEC) ---
-class Etec(models.Model):
-    codigo = models.CharField(max_length=10, unique=True, help_text="Ex: 058")
-    nome = models.CharField(max_length=150, help_text="Ex: Etec Euro Albino de Souza")
-    cidade = models.CharField(max_length=100, help_text="Ex: Araras")
-
-    def __str__(self):
-        return f"{self.nome} - {self.cidade}"
-
-
-# --- 2. ALIMENTOS (Vinculados à ETEC) ---
+# --- 1. ALIMENTOS ---
 class Alimento(models.Model):
 
     EMBALAGENS = [
@@ -36,9 +26,6 @@ class Alimento(models.Model):
         ('LANCHE', 'Lanche'),
         ('ALMOCO', 'Almoço'),
     ]
-
-    # Relação com a ETEC
-    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='alimentos', null=True, blank=True)
 
     nome = models.CharField(max_length=100)
 
@@ -76,10 +63,8 @@ class Alimento(models.Model):
         return total if total else 0
     
 
-# --- 3. LOTES (Vinculados à ETEC) ---
+# --- 2. LOTES ---
 class Lote(models.Model):
-    etec = models.ForeignKey(Etec, on_delete=models.CASCADE, related_name='lotes', null=True, blank=True)
-
     alimento = models.ForeignKey(
         Alimento,
         on_delete=models.CASCADE,
@@ -99,7 +84,7 @@ class Lote(models.Model):
         return f"{self.alimento.nome} - Lote {self.numero_lote}"
 
 
-# --- 4. MOVIMENTAÇÕES ---
+# --- 3. MOVIMENTAÇÕES ---
 class Movimentacao(models.Model):
 
     TIPOS = [
@@ -127,26 +112,18 @@ class Movimentacao(models.Model):
     )
 
     def __str__(self):
-        # Corrigido de 'this.tipo' para 'self.tipo'
         return f"{self.tipo} - {self.lote.alimento.nome}"
 
 
-# --- 5. PERFIL DO UTILIZADOR (Vinculado à ETEC) ---
+# --- 4. PERFIL DO UTILIZADOR ---
 class Perfil(models.Model):
     user = models.OneToOneField(
         User,
         on_delete=models.CASCADE,
         related_name='perfil'
     )
-    etec = models.ForeignKey(
-        'Etec',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='usuarios'
-    )
     email_verificado = models.BooleanField(default=False)
     aprovado_diretora = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.username} ({self.etec or 'Sem Escola'})"
+        return self.user.username

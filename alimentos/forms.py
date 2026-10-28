@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import Alimento, Lote, Movimentacao, Etec, Perfil 
+from .models import Alimento, Lote, Movimentacao, Perfil 
 
 # Cadastro de alimentos (Usado para Edição)
 class AlimentoForm(forms.ModelForm):
@@ -76,7 +76,6 @@ class CriarAlimentoForm(AlimentoForm):
     )
     
 
-
 # Editar lote
 class LoteForm(forms.ModelForm):
     class Meta:
@@ -94,6 +93,7 @@ class LoteForm(forms.ModelForm):
             raise forms.ValidationError("A quantidade não pode ser negativa.")
         return quantidade
 
+
 # Select de lotes que guarda de qual alimento é cada lote (o JavaScript usa isso pra filtrar)
 class LoteSelect(forms.Select):
     def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
@@ -102,6 +102,7 @@ class LoteSelect(forms.Select):
         if instance is not None:
             option['attrs']['data-alimento'] = instance.alimento_id
         return option
+
 
 # Movimentação do estoque (lotes)
 class MovimentacaoForm(forms.Form):
@@ -131,7 +132,7 @@ class MovimentacaoForm(forms.Form):
         )
     )
 
-        # Lote que já existe (obrigatório na saída; na entrada pode ser trocado por um lote novo)
+    # Lote que já existe (obrigatório na saída; na entrada pode ser trocado por um lote novo)
     numero_lote = forms.ModelChoiceField(
         label='Lote existente',
         queryset=Lote.objects.filter(quantidade_atual__gt=0).select_related('alimento'),
@@ -175,14 +176,11 @@ class MovimentacaoForm(forms.Form):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
 
-        # Mostra só os alimentos e lotes da ETEC de quem está logado
-    def __init__(self, *args, etec=None, **kwargs):
+    # O construtor foi simplificado, pois não há mais filtro por Etec
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if etec is not None:
-            self.fields['alimento'].queryset = Alimento.objects.filter(etec=etec)
-            self.fields['numero_lote'].queryset = Lote.objects.filter(
-                etec=etec, quantidade_atual__gt=0
-            ).select_related('alimento')
+        self.fields['alimento'].queryset = Alimento.objects.all()
+        self.fields['numero_lote'].queryset = Lote.objects.filter(quantidade_atual__gt=0).select_related('alimento')
 
     def clean(self):
         cleaned = super().clean()
@@ -225,17 +223,9 @@ class MovimentacaoForm(forms.Form):
         return cleaned
 
 
-# Criar conta com associação correta da ETEC e Perfil
+# Criar conta sem associação de Etec
 class CriarContaForm(UserCreationForm):
     
-    etec = forms.ModelChoiceField(
-        queryset=Etec.objects.all(),
-        required=True,
-        label="Selecione a sua ETEC",
-        empty_label="Escolha uma escola...",
-        widget=forms.Select(attrs={'class': 'form-control'})
-    )
-
     first_name = forms.CharField(
         label="Nome completo",
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Como podemos chamar você?'})
@@ -262,11 +252,12 @@ class CriarContaForm(UserCreationForm):
         
         if commit:
             user.save()
+            # Criação do perfil sem o campo Etec
             Perfil.objects.update_or_create(
                 user=user,
                 defaults={
-                    'etec': self.cleaned_data['etec'],
-                    'email_verificado': False
+                    'email_verificado': False,
+                    'aprovado_diretora': False
                 }
             )
         return user

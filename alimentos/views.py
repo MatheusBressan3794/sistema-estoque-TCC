@@ -22,31 +22,23 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-from .models import Alimento, Lote, Movimentacao, Perfil, Etec
+from .models import Alimento, Lote, Movimentacao, Perfil
 from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
+
 
 def logout_view(request):
     logout(request) 
     return redirect('login')
 
+
 # --- PÁGINAS GERAIS E DASHBOARD ---
 def inicio(request):
     return render(request, 'alimentos/inicio.html')
 
+
 @login_required(login_url='login')
 def dashboard(request):
-    # Trava de segurança: Verifica se o utilizador tem perfil associado
-    if not hasattr(request.user, 'perfil'):
-        if request.user.is_superuser or request.user.is_staff:
-            return redirect('aprovar_contas')
-        else:
-            logout(request)
-            messages.error(request, "A sua conta não tem uma escola associada. Por favor, faça um novo registo.")
-            return redirect('login')
-        
-    escola_usuario = request.user.perfil.etec
-    
-    alimentos_faltantes = Alimento.objects.filter(etec=escola_usuario).annotate(
+    alimentos_faltantes = Alimento.objects.annotate(
         total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
@@ -58,7 +50,6 @@ def dashboard(request):
     limite_vencimento = hoje + timedelta(days=15)
     
     lotes_proximos_vencimento = Lote.objects.filter(
-        etec=escola_usuario,
         data_validade__lte=limite_vencimento,
         quantidade_atual__gt=0
     ).order_by('data_validade')
@@ -74,14 +65,8 @@ def dashboard(request):
 # --- GESTÃO DE ALIMENTOS ---
 @login_required
 def listar_alimentos(request):
-    # Trava de segurança para administradores sem perfil de escola
-    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
-        return redirect('aprovar_contas')
-        
-    escola_usuario = request.user.perfil.etec
     busca = request.GET.get('busca', '')
-    
-    alimentos = Alimento.objects.filter(etec=escola_usuario).order_by('nome')
+    alimentos = Alimento.objects.all().order_by('nome')
 
     if busca:
         alimentos = alimentos.filter(nome__icontains=busca)
@@ -106,8 +91,7 @@ def listar_alimentos(request):
 
 @login_required
 def detalhes_alimento(request, id):
-    escola_usuario = request.user.perfil.etec
-    alimento = get_object_or_404(Alimento, id=id, etec=escola_usuario)
+    alimento = get_object_or_404(Alimento, id=id)
     lotes = alimento.lotes.filter(quantidade_atual__gt=0).order_by('data_validade')
 
     return render(
@@ -121,13 +105,10 @@ def detalhes_alimento(request, id):
 
 @login_required
 def criar_alimento(request):
-    escola_usuario = request.user.perfil.etec
     form = CriarAlimentoForm(request.POST or None)
     
     if form.is_valid():
-        alimento = form.save(commit=False)
-        alimento.etec = escola_usuario
-        alimento.save()
+        alimento = form.save()
         
         numero_lote = form.cleaned_data['numero_lote']
         data_validade = form.cleaned_data['data_validade']
@@ -136,7 +117,6 @@ def criar_alimento(request):
         quantidade_real_estoque = quantidade_pacotes * alimento.quantidade_embalagem
         
         lote = Lote.objects.create(
-            etec=escola_usuario,
             alimento=alimento,
             numero_lote=numero_lote,
             quantidade_atual=quantidade_real_estoque,
@@ -156,8 +136,7 @@ def criar_alimento(request):
 
 @login_required
 def atualizar_alimento(request, id):
-    escola_usuario = request.user.perfil.etec
-    alimento = get_object_or_404(Alimento, id=id, etec=escola_usuario)
+    alimento = get_object_or_404(Alimento, id=id)
     form = AlimentoForm(request.POST or None, instance=alimento)
     if form.is_valid():
         form.save()
@@ -167,8 +146,7 @@ def atualizar_alimento(request, id):
 
 @login_required
 def deletar_alimento(request, id):
-    escola_usuario = request.user.perfil.etec
-    alimento = get_object_or_404(Alimento, id=id, etec=escola_usuario)
+    alimento = get_object_or_404(Alimento, id=id)
     tem_lotes = alimento.lotes.exists()
 
     if request.method == 'POST':
@@ -194,8 +172,7 @@ def deletar_alimento(request, id):
 # --- LOTES E EDIÇÃO ---
 @login_required
 def editar_lote(request, id):
-    escola_usuario = request.user.perfil.etec
-    lote = get_object_or_404(Lote, id=id, etec=escola_usuario)
+    lote = get_object_or_404(Lote, id=id)
     form = LoteForm(request.POST or None, instance=lote)
     if form.is_valid():
         form.save()
@@ -238,7 +215,6 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         
-        # 1. Verifica se o utilizador existe e digitou a palavra-passe correta, mas está pendente (inativo)
         if username and password:
             try:
                 user_obj = User.objects.get(username=username)
@@ -250,17 +226,12 @@ def login_view(request):
                         messages.warning(request, "Aguardando aprovação da coordenadora")
                     return redirect('login')
             except User.DoesNotExist:
-                pass # Deixa cair no fluxo normal de erro se o utilizador não existir
+                pass 
 
-        # 2. Fluxo normal de login do Django para utilizadores ativos
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
-            
-            if (user.is_superuser or user.is_staff) and not hasattr(user, 'perfil'):
-                return redirect('aprovar_contas')
-                
             return redirect('dashboard')
         else:
             messages.error(request, 'Usuário ou senha incorretos.')
@@ -273,14 +244,8 @@ def login_view(request):
 # --- MOVIMENTAÇÃO DE ESTOQUE ---
 @login_required
 def movimentacao_estoque(request):
-    # Trava de segurança: Administrador global sem perfil é redirecionado para o painel de aprovações
-    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
-        return redirect('aprovar_contas')
-        
-    escola_usuario = request.user.perfil.etec
-    
     if request.method == 'POST':
-        form = MovimentacaoForm(request.POST, etec=escola_usuario)
+        form = MovimentacaoForm(request.POST)
 
         if form.is_valid():
             tipo = form.cleaned_data['tipo']
@@ -290,17 +255,13 @@ def movimentacao_estoque(request):
             data_validade = form.cleaned_data.get('data_validade')
             novo_lote = form.cleaned_data.get('novo_lote')
 
-            if alimento.etec != escola_usuario:
-                messages.error(request, 'Operação inválida para a sua unidade escolar.')
-                return redirect('movimentacao_estoque')
-
             quantidade_real_estoque = quantidade_pacotes * alimento.quantidade_embalagem
 
             # --- SAÍDA ---
             if tipo == 'SAIDA':
                 lote = lote_selecionado
                 
-                if not lote or lote.etec != escola_usuario or lote.quantidade_atual < quantidade_real_estoque:
+                if not lote or lote.quantidade_atual < quantidade_real_estoque:
                     pacotes_disponiveis = int(lote.quantidade_atual / alimento.quantidade_embalagem) if lote and alimento.quantidade_embalagem > 0 else 0
                     messages.error(
                         request,
@@ -321,13 +282,14 @@ def movimentacao_estoque(request):
 
             # --- ENTRADA ---
             elif tipo == 'ENTRADA':
-                if isinstance(lote_selecionado, Lote) and lote_selecionado.etec == escola_usuario:
+                if isinstance(lote_selecionado, Lote):
                     lote = lote_selecionado
                     lote.quantidade_atual += quantidade_real_estoque
                     lote.save()
                 else:
                     numero_lote_str = novo_lote
-                    lote = Lote.objects.filter(etec=escola_usuario, alimento=alimento, numero_lote=numero_lote_str).first()
+                    lote = Lote.objects.filter(alimento=alimento, numero_lote=numero_lote_str).first()
+                    
                     if lote:
                         lote.quantidade_atual += quantidade_real_estoque
                         lote.save()
@@ -337,7 +299,6 @@ def movimentacao_estoque(request):
                             return render(request, 'alimentos/movimentacao.html', {'form': form})
                         
                         lote = Lote.objects.create(
-                            etec=escola_usuario,
                             alimento=alimento,
                             numero_lote=numero_lote_str,
                             quantidade_atual=quantidade_real_estoque,
@@ -353,14 +314,14 @@ def movimentacao_estoque(request):
                 messages.success(request, 'Entrada registrada com sucesso!')
                 return redirect('movimentacao_estoque')
     else:
-        form = MovimentacaoForm(etec=escola_usuario)
+        form = MovimentacaoForm()
 
     return render(request, 'alimentos/movimentacao.html', {'form': form})
+
 # --- ALERTAS E ESTOQUE MÍNIMO ---
 @login_required
 def alerta_estoque_minimo(request):
-    escola_usuario = request.user.perfil.etec
-    alimentos_criticos = Alimento.objects.filter(etec=escola_usuario).annotate(
+    alimentos_criticos = Alimento.objects.annotate(
         total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
@@ -371,8 +332,7 @@ def alerta_estoque_minimo(request):
 
 @login_required
 def produtos_em_falta(request):
-    escola_usuario = request.user.perfil.etec
-    alimentos_faltantes = Alimento.objects.filter(etec=escola_usuario).annotate(
+    alimentos_faltantes = Alimento.objects.annotate(
         total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
@@ -410,28 +370,11 @@ def relatorio_movimentacoes(request, tipo):
     except ValueError:
         data_fim = hoje
 
-    etec_id = request.GET.get('etec', '')
-    etecs = None
-
-    # Queryset base
     movimentacoes = Movimentacao.objects.filter(
         tipo=tipo_valor, 
         data_movimentacao__range=(data_inicio, data_fim)
-    ).select_related('lote', 'lote__alimento', 'lote__etec')
-
-    # Controlo de permissões e filtros
-    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
-        etecs = Etec.objects.all() # Lista todas as escolas para o admin escolher
-        if etec_id and etec_id.isdigit():
-            movimentacoes = movimentacoes.filter(lote__etec_id=etec_id)
-    elif hasattr(request.user, 'perfil') and request.user.perfil.etec:
-        escola_usuario = request.user.perfil.etec
-        movimentacoes = movimentacoes.filter(lote__etec=escola_usuario)
-    else:
-        messages.error(request, "Acesso não autorizado.")
-        return redirect('login')
-
-    movimentacoes = movimentacoes.order_by('-data_movimentacao', 'lote__alimento__nome')
+    ).select_related('lote', 'lote__alimento').order_by('-data_movimentacao', 'lote__alimento__nome')
+    
     total_quantidade = movimentacoes.aggregate(total=Sum('quantidade'))['total'] or 0
 
     return render(
@@ -445,8 +388,6 @@ def relatorio_movimentacoes(request, tipo):
             'data_inicio': data_inicio,
             'data_fim': data_fim,
             'total_quantidade': total_quantidade,
-            'etecs': etecs,
-            'etec_selecionada': etec_id,
         }
     )
 
@@ -473,23 +414,10 @@ def exportar_pdf_movimentacoes(request, tipo):
     except ValueError:
         data_fim = data_inicio
 
-    etec_id = request.GET.get('etec', '')
-
     movimentacoes = Movimentacao.objects.filter(
         tipo=tipo_valor, 
         data_movimentacao__range=(data_inicio, data_fim)
-    ).select_related('lote', 'lote__alimento', 'lote__etec')
-
-    if (request.user.is_superuser or request.user.is_staff) and not hasattr(request.user, 'perfil'):
-        if etec_id and etec_id.isdigit():
-            movimentacoes = movimentacoes.filter(lote__etec_id=etec_id)
-    elif hasattr(request.user, 'perfil') and request.user.perfil.etec:
-        escola_usuario = request.user.perfil.etec
-        movimentacoes = movimentacoes.filter(lote__etec=escola_usuario)
-    else:
-        raise Http404('Acesso não autorizado.')
-
-    movimentacoes = movimentacoes.order_by('-data_movimentacao', 'lote__alimento__nome')
+    ).select_related('lote', 'lote__alimento').order_by('-data_movimentacao', 'lote__alimento__nome')
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="relatorio_{tipo}_{data_inicio}_a_{data_fim}.pdf"'
@@ -563,7 +491,6 @@ def exportar_pdf_movimentacoes(request, tipo):
 
 
 # --- GESTÃO DE CONTAS E APROVAÇÕES ---
-
 def is_coordenadora(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
 
@@ -588,10 +515,8 @@ def ativar_conta(request, uidb64, token):
 @login_required
 @user_passes_test(is_coordenadora, login_url='/')
 def aprovar_contas(request):
-    # Usamos select_related para carregar o perfil e a ETEC de forma otimizada
-    # Só exibe contas pendentes que já validaram o email
-    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False, perfil__email_verificado=True).select_related('perfil', 'perfil__etec').order_by('-date_joined')
-    usuarios_aprovados = User.objects.filter(is_active=True, is_superuser=False).select_related('perfil', 'perfil__etec').order_by('username')
+    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False, perfil__email_verificado=True).select_related('perfil').order_by('-date_joined')
+    usuarios_aprovados = User.objects.filter(is_active=True, is_superuser=False).select_related('perfil').order_by('username')
     
     contexto = {
         'pendentes': usuarios_pendentes,
