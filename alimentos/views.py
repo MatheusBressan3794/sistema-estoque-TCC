@@ -173,11 +173,31 @@ def deletar_alimento(request, id):
 @login_required
 def editar_lote(request, id):
     lote = get_object_or_404(Lote, id=id)
+    
+    # Guardamos a quantidade anterior para saber se houve aumento ou diminuição
+    quantidade_antiga = lote.quantidade_atual
+    
     form = LoteForm(request.POST or None, instance=lote)
     if form.is_valid():
-        form.save()
-        messages.success(request, 'Lote atualizado com sucesso!')
+        lote_atualizado = form.save()
+        
+        # Calcula a diferença na quantidade atual do lote
+        diferenca = lote_atualizado.quantidade_atual - quantidade_antiga
+        
+        if diferenca != 0:
+            # Se a quantidade aumentou ou diminuiu na edição, criamos uma movimentação de ajuste
+            tipo_mov = 'ENTRADA' if diferenca > 0 else 'SAIDA'
+            quantidade_abs = abs(diferenca)
+            
+            Movimentacao.objects.create(
+                lote=lote_atualizado,
+                tipo=tipo_mov,
+                quantidade=quantidade_abs
+            )
+            
+        messages.success(request, 'Lote atualizado com sucesso')
         return redirect('detalhes_alimento', id=lote.alimento.id)
+        
     return render(request, 'alimentos/lote_form.html', {'form': form, 'lote': lote})
 
 
@@ -232,6 +252,8 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
+            if is_coordenadora(user):
+                return redirect('aprovar_contas')
             return redirect('dashboard')
         else:
             messages.error(request, 'Usuário ou senha incorretos.')
