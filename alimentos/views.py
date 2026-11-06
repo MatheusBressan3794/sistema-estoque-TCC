@@ -22,8 +22,30 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-from .models import Alimento, Lote, Movimentacao, Perfil
+from .models import Alimento, Lote, Movimentacao, Perfil, LogAtividade
 from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
+
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
+
+
+# --- TRILHA DE AUDITORIA: LOGIN AUTOMÁTICO ---
+@receiver(user_logged_in)
+def registrar_login(sender, request, user, **kwargs):
+    ip = request.META.get('REMOTE_ADDR', 'Desconhecido')
+    LogAtividade.objects.create(
+        usuario=user,
+        acao="Login no Sistema",
+        detalhes=f"Acesso realizado a partir do IP: {ip}"
+    )
+
+
+# --- TRILHA DE AUDITORIA: VIEW RESTRITA ---
+@login_required
+@user_passes_test(lambda u: u.is_superuser, login_url='dashboard')
+def tela_auditoria(request):
+    logs = LogAtividade.objects.all().order_by('-data_hora')
+    return render(request, 'alimentos/auditoria.html', {'logs': logs})
 
 
 def logout_view(request):
@@ -129,6 +151,13 @@ def criar_alimento(request):
             quantidade=quantidade_real_estoque
         )
         
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Cadastro de Alimento",
+            detalhes=f"Cadastrou o alimento '{alimento.nome}' com o lote inicial {numero_lote} ({quantidade_pacotes} pacotes)."
+        )
+        
         messages.success(request, 'Alimento e Lote Inicial cadastrados com sucesso!')
         return redirect('listar_alimentos')
         
@@ -137,17 +166,29 @@ def criar_alimento(request):
 @login_required
 def atualizar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
+    nome_anterior = alimento.nome
     form = AlimentoForm(request.POST or None, instance=alimento)
+    
     if form.is_valid():
         form.save()
+        
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Edição de Alimento",
+            detalhes=f"Atualizou o registo do alimento '{nome_anterior}' (ID: {alimento.id})."
+        )
+        
         messages.success(request, 'Alimento atualizado com sucesso!')
         return redirect('listar_alimentos')
+        
     return render(request, 'alimentos/form.html', {'form': form})
 
 @login_required
 def deletar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     tem_lotes = alimento.lotes.exists()
+    nome_alimento = alimento.nome
 
     if request.method == 'POST':
         if tem_lotes:
@@ -159,6 +200,14 @@ def deletar_alimento(request, id):
 
         try:
             alimento.delete()
+            
+            # LOG
+            LogAtividade.objects.create(
+                usuario=request.user,
+                acao="Exclusão de Alimento",
+                detalhes=f"Excluiu o alimento '{nome_alimento}' definitivamente do sistema."
+            )
+            
         except ProtectedError:
             messages.error(request, f'Não é possível excluir "{alimento.nome}" porque existem lotes vinculados.')
             return redirect('detalhes_alimento', id=alimento.id)
@@ -173,19 +222,14 @@ def deletar_alimento(request, id):
 @login_required
 def editar_lote(request, id):
     lote = get_object_or_404(Lote, id=id)
-    
-    # Guardamos a quantidade anterior para saber se houve aumento ou diminuição
     quantidade_antiga = lote.quantidade_atual
     
     form = LoteForm(request.POST or None, instance=lote)
     if form.is_valid():
         lote_atualizado = form.save()
-        
-        # Calcula a diferença na quantidade atual do lote
         diferenca = lote_atualizado.quantidade_atual - quantidade_antiga
         
         if diferenca != 0:
-            # Se a quantidade aumentou ou diminuiu na edição, criamos uma movimentação de ajuste
             tipo_mov = 'ENTRADA' if diferenca > 0 else 'SAIDA'
             quantidade_abs = abs(diferenca)
             
@@ -194,6 +238,13 @@ def editar_lote(request, id):
                 tipo=tipo_mov,
                 quantidade=quantidade_abs
             )
+            
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Edição de Lote",
+            detalhes=f"Atualizou o lote '{lote_atualizado.numero_lote}' do alimento '{lote_atualizado.alimento.nome}'. Quantidade ajustada: de {quantidade_antiga} para {lote_atualizado.quantidade_atual}."
+        )
             
         messages.success(request, 'Lote atualizado com sucesso')
         return redirect('detalhes_alimento', id=lote.alimento.id)
@@ -298,6 +349,13 @@ def movimentacao_estoque(request):
                         tipo=tipo,
                         quantidade=quantidade_real_estoque
                     )
+                    
+                    # LOG
+                    LogAtividade.objects.create(
+                        usuario=request.user,
+                        acao="Saída de Estoque",
+                        detalhes=f"Retirou {quantidade_pacotes} pacote(s) do alimento '{alimento.nome}' (Lote: {lote.numero_lote})."
+                    )
 
                     messages.success(request, 'Saída registrada com sucesso!')
                     return redirect('movimentacao_estoque')
@@ -308,6 +366,8 @@ def movimentacao_estoque(request):
                     lote = lote_selecionado
                     lote.quantidade_atual += quantidade_real_estoque
                     lote.save()
+                    
+                    log_detalhe = f"Adicionou {quantidade_pacotes} pacote(s) ao lote existente '{lote.numero_lote}' do alimento '{alimento.nome}'."
                 else:
                     numero_lote_str = novo_lote
                     lote = Lote.objects.filter(alimento=alimento, numero_lote=numero_lote_str).first()
@@ -315,6 +375,7 @@ def movimentacao_estoque(request):
                     if lote:
                         lote.quantidade_atual += quantidade_real_estoque
                         lote.save()
+                        log_detalhe = f"Adicionou {quantidade_pacotes} pacote(s) ao lote existente '{lote.numero_lote}' do alimento '{alimento.nome}'."
                     else:
                         if not data_validade:
                             messages.error(request, 'Informe a data de validade para criar um novo lote.')
@@ -326,11 +387,19 @@ def movimentacao_estoque(request):
                             quantidade_atual=quantidade_real_estoque,
                             data_validade=data_validade
                         )
+                        log_detalhe = f"Criou um novo lote '{numero_lote_str}' para o alimento '{alimento.nome}' e adicionou {quantidade_pacotes} pacote(s)."
 
                 Movimentacao.objects.create(
                     lote=lote,
                     tipo=tipo,
                     quantidade=quantidade_real_estoque
+                )
+                
+                # LOG
+                LogAtividade.objects.create(
+                    usuario=request.user,
+                    acao="Entrada de Estoque",
+                    detalhes=log_detalhe
                 )
 
                 messages.success(request, 'Entrada registrada com sucesso!')
@@ -507,6 +576,14 @@ def exportar_pdf_movimentacoes(request, tipo):
     ]))
 
     elementos.append(tabela)
+    
+    # LOG
+    LogAtividade.objects.create(
+        usuario=request.user,
+        acao="Exportação de Relatório",
+        detalhes=f"Exportou um relatório PDF de {tipo_valor} para o período de {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}."
+    )
+    
     doc.build(elementos)
 
     return response
@@ -553,6 +630,14 @@ def aprovar_conta(request, id):
         usuario = get_object_or_404(User, id=id)
         usuario.is_active = True  
         usuario.save()
+        
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Aprovação de Utilizador",
+            detalhes=f"Aprovou a conta do utilizador '{usuario.username}'."
+        )
+        
         messages.success(request, f"A conta de {usuario.username} foi aprovada com sucesso!")
     return redirect('aprovar_contas')
 
@@ -563,6 +648,14 @@ def recusar_conta(request, id):
         usuario = get_object_or_404(User, id=id)
         nome = usuario.username
         usuario.delete()  
+        
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Rejeição de Utilizador",
+            detalhes=f"Rejeitou e excluiu a conta pendente do utilizador '{nome}'."
+        )
+        
         messages.error(request, f"A conta de {nome} foi rejeitada e removida do sistema.")
     return redirect('aprovar_contas')
 
@@ -573,6 +666,14 @@ def promover_admin(request, id):
         usuario = get_object_or_404(User, id=id)
         usuario.is_staff = True  
         usuario.save()
+        
+        # LOG
+        LogAtividade.objects.create(
+            usuario=request.user,
+            acao="Promoção a Administrador",
+            detalhes=f"Promoveu o utilizador '{usuario.username}' a Administrador."
+        )
+        
         messages.success(request, f"O utilizador {usuario.username} foi promovido a Administrador com sucesso!")
     return redirect('aprovar_contas')
 
@@ -584,6 +685,14 @@ def rebaixar_admin(request, id):
         if usuario != request.user:
             usuario.is_staff = False  
             usuario.save()
+            
+            # LOG
+            LogAtividade.objects.create(
+                usuario=request.user,
+                acao="Remoção de Privilégios",
+                detalhes=f"Removeu os privilégios de Administrador do utilizador '{usuario.username}'."
+            )
+            
             messages.warning(request, f"Os privilégios de administrador de {usuario.username} foram removidos.")
         else:
             messages.error(request, "Não pode remover os seus próprios privilégios de administrador.")
@@ -597,6 +706,14 @@ def excluir_conta(request, id):
         if usuario != request.user:
             nome = usuario.username
             usuario.delete()  
+            
+            # LOG
+            LogAtividade.objects.create(
+                usuario=request.user,
+                acao="Exclusão de Conta",
+                detalhes=f"Excluiu permanentemente a conta ativa do utilizador '{nome}'."
+            )
+            
             messages.error(request, f"A conta de {nome} foi excluída permanentemente do sistema.")
         else:
             messages.error(request, "Não pode excluir a sua própria conta ativa a partir deste painel.")

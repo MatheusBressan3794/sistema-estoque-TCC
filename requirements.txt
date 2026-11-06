@@ -11,3 +11,7 @@ tzdata==2026.4
 whitenoise==6.12.0
 django-anymail==12.0
 # psycopg2-binary==2.9.9
+Django>=5.0
+psycopg2-binary>=2.9
+python-decouple>=3.8
+dj-database-url>=2.1

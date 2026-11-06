@@ -11,21 +11,21 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('cadastro/', views.cadastro, name='cadastro'),
 
-    # Rotas de Recuperação de Senha (Django Auth Views)
+    # Rotas de Recuperação de Senha (Customizadas para Stock Guardians)
     path('password_reset/', auth_views.PasswordResetView.as_view(
-        template_name='registration/password_reset_form.html'
+        template_name='alimentos/password_reset.html'
     ), name='password_reset'),
 
     path('password_reset/done/', auth_views.PasswordResetDoneView.as_view(
-        template_name='registration/password_reset_done.html'
+        template_name='alimentos/password_reset_done.html'
     ), name='password_reset_done'),
 
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
-        template_name='registration/password_reset_confirm.html'
+        template_name='alimentos/password_reset_confirm.html'
     ), name='password_reset_confirm'),
 
     path('reset/done/', auth_views.PasswordResetCompleteView.as_view(
-        template_name='registration/password_reset_complete.html'
+        template_name='alimentos/password_reset_complete.html'
     ), name='password_reset_complete'),
 
     # Dashboard
@@ -59,4 +59,7 @@ urlpatterns = [
     path('contas/promover/<int:id>/', views.promover_admin, name='promover_admin'),
     path('contas/rebaixar/<int:id>/', views.rebaixar_admin, name='rebaixar_admin'),
     path('contas/excluir/<int:id>/', views.excluir_conta, name='excluir_conta'),
+
+    # Trilha de Auditoria
+    path('auditoria/', views.tela_auditoria, name='tela_auditoria'),
 ]
