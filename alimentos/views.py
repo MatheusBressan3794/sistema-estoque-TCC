@@ -1,9 +1,12 @@
 from datetime import date, timedelta
+from decimal import Decimal
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Sum, F, Q
 from django.db.models.functions import Coalesce
 from django.db.models.deletion import ProtectedError
@@ -16,6 +19,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.template.loader import render_to_string
 from django.core.mail import EmailMessage
 from django.urls import reverse
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -24,9 +29,6 @@ from reportlab.lib import colors
 
 from .models import Alimento, Lote, Movimentacao, Perfil, LogAtividade
 from .forms import CriarContaForm, CriarAlimentoForm, AlimentoForm, LoteForm, MovimentacaoForm
-
-from django.contrib.auth.signals import user_logged_in
-from django.dispatch import receiver
 
 
 # --- TRILHA DE AUDITORIA: LOGIN AUTOMÁTICO ---
@@ -49,7 +51,7 @@ def tela_auditoria(request):
 
 
 def logout_view(request):
-    logout(request) 
+    logout(request)
     return redirect('login')
 
 
@@ -60,18 +62,19 @@ def inicio(request):
 
 @login_required(login_url='login')
 def dashboard(request):
-    alimentos_faltantes = Alimento.objects.annotate(
-        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
+    alimentos_faltantes = Alimento.objects.filter(ativo=True).annotate(
+        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), Decimal('0.00')),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
-        Q(total_estoque__lte=0) | 
+        Q(total_estoque__lte=Decimal('0.00')) |
         Q(total_estoque__lte=F('estoque_minimo_calc'))
     )
-    
+
     hoje = date.today()
     limite_vencimento = hoje + timedelta(days=15)
-    
+
     lotes_proximos_vencimento = Lote.objects.filter(
+        alimento__ativo=True,
         data_validade__lte=limite_vencimento,
         quantidade_atual__gt=0
     ).order_by('data_validade')
@@ -88,17 +91,19 @@ def dashboard(request):
 @login_required
 def listar_alimentos(request):
     busca = request.GET.get('busca', '')
-    alimentos = Alimento.objects.all().order_by('nome')
+    alimentos = Alimento.objects.filter(ativo=True).order_by('nome')
 
     if busca:
         alimentos = alimentos.filter(nome__icontains=busca)
 
     for alimento in alimentos:
-        total_qnt = alimento.lotes.filter(quantidade_atual__gt=0).aggregate(total=Sum('quantidade_atual'))['total'] or 0.0
+        total_qnt = alimento.lotes.filter(quantidade_atual__gt=0).aggregate(
+            total=Sum('quantidade_atual')
+        )['total'] or Decimal('0.00')
         alimento.total_estoque = total_qnt
-        
+
         if alimento.quantidade_embalagem and alimento.quantidade_embalagem > 0:
-            alimento.pacotes_totais = total_qnt / float(alimento.quantidade_embalagem)
+            alimento.pacotes_totais = float(total_qnt) / float(alimento.quantidade_embalagem)
         else:
             alimento.pacotes_totais = 0.0
 
@@ -110,6 +115,7 @@ def listar_alimentos(request):
             'busca': busca
         }
     )
+
 
 @login_required
 def detalhes_alimento(request, id):
@@ -125,64 +131,65 @@ def detalhes_alimento(request, id):
         }
     )
 
+
 @login_required
 def criar_alimento(request):
     form = CriarAlimentoForm(request.POST or None)
-    
+
     if form.is_valid():
         alimento = form.save()
-        
+
         numero_lote = form.cleaned_data['numero_lote']
         data_validade = form.cleaned_data['data_validade']
         quantidade_pacotes = form.cleaned_data['quantidade_inicial']
-        
+
         quantidade_real_estoque = quantidade_pacotes * alimento.quantidade_embalagem
-        
+
         lote = Lote.objects.create(
             alimento=alimento,
             numero_lote=numero_lote,
             quantidade_atual=quantidade_real_estoque,
             data_validade=data_validade
         )
-        
+
         Movimentacao.objects.create(
             lote=lote,
             tipo='ENTRADA',
             quantidade=quantidade_real_estoque
         )
-        
-        # LOG
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Cadastro de Alimento",
             detalhes=f"Cadastrou o alimento '{alimento.nome}' com o lote inicial {numero_lote} ({quantidade_pacotes} pacotes)."
         )
-        
+
         messages.success(request, 'Alimento e Lote Inicial cadastrados com sucesso!')
         return redirect('listar_alimentos')
-        
+
     return render(request, 'alimentos/form.html', {'form': form})
+
 
 @login_required
 def atualizar_alimento(request, id):
     alimento = get_object_or_404(Alimento, id=id)
     nome_anterior = alimento.nome
     form = AlimentoForm(request.POST or None, instance=alimento)
-    
+
     if form.is_valid():
         form.save()
-        
-        # LOG
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Edição de Alimento",
             detalhes=f"Atualizou o registo do alimento '{nome_anterior}' (ID: {alimento.id})."
         )
-        
+
         messages.success(request, 'Alimento atualizado com sucesso!')
         return redirect('listar_alimentos')
-        
+
     return render(request, 'alimentos/form.html', {'form': form})
+
 
 @login_required
 def deletar_alimento(request, id):
@@ -191,28 +198,35 @@ def deletar_alimento(request, id):
     nome_alimento = alimento.nome
 
     if request.method == 'POST':
+        justificativa = request.POST.get('justificativa', '').strip()
+        if not justificativa:
+            messages.error(request, 'Informe a justificativa para remover o alimento.')
+            return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento, 'tem_lotes': tem_lotes})
+
         if tem_lotes:
-            messages.error(
-                request,
-                f'Não é possível excluir "{alimento.nome}" porque já existem lotes cadastrados para ele.'
+            alimento.ativo = False
+            alimento.save(update_fields=['ativo'])
+
+            LogAtividade.objects.create(
+                usuario=request.user,
+                acao="Exclusão Lógica de Alimento",
+                detalhes=f"Desativou o alimento '{nome_alimento}' (ID: {alimento.id}). Justificativa: {justificativa}"
             )
-            return redirect('detalhes_alimento', id=alimento.id)
+            messages.success(request, f'O alimento "{nome_alimento}" foi inativado, mantendo seu histórico de movimentações.')
+            return redirect('listar_alimentos')
 
         try:
             alimento.delete()
-            
-            # LOG
             LogAtividade.objects.create(
                 usuario=request.user,
-                acao="Exclusão de Alimento",
-                detalhes=f"Excluiu o alimento '{nome_alimento}' definitivamente do sistema."
+                acao="Exclusão Física de Alimento",
+                detalhes=f"Excluiu definitivamente o alimento '{nome_alimento}' (sem movimentações). Justificativa: {justificativa}"
             )
-            
+            messages.success(request, 'Alimento removido definitivamente do sistema.')
         except ProtectedError:
             messages.error(request, f'Não é possível excluir "{alimento.nome}" porque existem lotes vinculados.')
             return redirect('detalhes_alimento', id=alimento.id)
 
-        messages.success(request, 'Alimento removido do estoque.')
         return redirect('listar_alimentos')
 
     return render(request, 'alimentos/confirmar_delete.html', {'alimento': alimento, 'tem_lotes': tem_lotes})
@@ -223,32 +237,31 @@ def deletar_alimento(request, id):
 def editar_lote(request, id):
     lote = get_object_or_404(Lote, id=id)
     quantidade_antiga = lote.quantidade_atual
-    
+
     form = LoteForm(request.POST or None, instance=lote)
     if form.is_valid():
         lote_atualizado = form.save()
         diferenca = lote_atualizado.quantidade_atual - quantidade_antiga
-        
+
         if diferenca != 0:
             tipo_mov = 'ENTRADA' if diferenca > 0 else 'SAIDA'
             quantidade_abs = abs(diferenca)
-            
+
             Movimentacao.objects.create(
                 lote=lote_atualizado,
                 tipo=tipo_mov,
                 quantidade=quantidade_abs
             )
-            
-        # LOG
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Edição de Lote",
             detalhes=f"Atualizou o lote '{lote_atualizado.numero_lote}' do alimento '{lote_atualizado.alimento.nome}'. Quantidade ajustada: de {quantidade_antiga} para {lote_atualizado.quantidade_atual}."
         )
-            
+
         messages.success(request, 'Lote atualizado com sucesso')
         return redirect('detalhes_alimento', id=lote.alimento.id)
-        
+
     return render(request, 'alimentos/lote_form.html', {'form': form, 'lote': lote})
 
 
@@ -281,11 +294,12 @@ def cadastro(request):
         form = CriarContaForm()
     return render(request, 'alimentos/cadastro.html', {'form': form})
 
+
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        
+
         if username and password:
             try:
                 user_obj = User.objects.get(username=username)
@@ -297,7 +311,7 @@ def login_view(request):
                         messages.warning(request, "Aguardando aprovação da coordenadora")
                     return redirect('login')
             except User.DoesNotExist:
-                pass 
+                pass
 
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -310,7 +324,7 @@ def login_view(request):
             messages.error(request, 'Usuário ou senha incorretos.')
     else:
         form = AuthenticationForm()
-        
+
     return render(request, 'alimentos/login.html', {'form': form})
 
 
@@ -332,15 +346,28 @@ def movimentacao_estoque(request):
 
             # --- SAÍDA ---
             if tipo == 'SAIDA':
-                lote = lote_selecionado
-                
-                if not lote or lote.quantidade_atual < quantidade_real_estoque:
-                    pacotes_disponiveis = int(lote.quantidade_atual / alimento.quantidade_embalagem) if lote and alimento.quantidade_embalagem > 0 else 0
-                    messages.error(
-                        request,
-                        f'Quantidade insuficiente. Este lote possui apenas {pacotes_disponiveis} pacotes disponíveis.'
-                    )
-                else:
+                if not lote_selecionado:
+                    messages.error(request, 'Selecione um lote válido para registrar a saída.')
+                    return render(request, 'alimentos/movimentacao.html', {'form': form})
+
+                with transaction.atomic():
+                    lote = Lote.objects.select_for_update().get(pk=lote_selecionado.pk)
+
+                    if lote.data_validade < date.today():
+                        messages.error(
+                            request,
+                            f'O lote {lote.numero_lote} venceu em {lote.data_validade.strftime("%d/%m/%Y")} e não pode ser baixado para consumo.'
+                        )
+                        return render(request, 'alimentos/movimentacao.html', {'form': form})
+
+                    if lote.quantidade_atual < quantidade_real_estoque:
+                        pacotes_disponiveis = int(lote.quantidade_atual / alimento.quantidade_embalagem) if alimento.quantidade_embalagem > 0 else 0
+                        messages.error(
+                            request,
+                            f'Quantidade insuficiente. Este lote possui apenas {pacotes_disponiveis} pacotes disponíveis.'
+                        )
+                        return render(request, 'alimentos/movimentacao.html', {'form': form})
+
                     lote.quantidade_atual -= quantidade_real_estoque
                     lote.save()
 
@@ -349,16 +376,15 @@ def movimentacao_estoque(request):
                         tipo=tipo,
                         quantidade=quantidade_real_estoque
                     )
-                    
-                    # LOG
+
                     LogAtividade.objects.create(
                         usuario=request.user,
                         acao="Saída de Estoque",
                         detalhes=f"Retirou {quantidade_pacotes} pacote(s) do alimento '{alimento.nome}' (Lote: {lote.numero_lote})."
                     )
 
-                    messages.success(request, 'Saída registrada com sucesso!')
-                    return redirect('movimentacao_estoque')
+                messages.success(request, 'Saída registrada com sucesso!')
+                return redirect('movimentacao_estoque')
 
             # --- ENTRADA ---
             elif tipo == 'ENTRADA':
@@ -366,12 +392,12 @@ def movimentacao_estoque(request):
                     lote = lote_selecionado
                     lote.quantidade_atual += quantidade_real_estoque
                     lote.save()
-                    
+
                     log_detalhe = f"Adicionou {quantidade_pacotes} pacote(s) ao lote existente '{lote.numero_lote}' do alimento '{alimento.nome}'."
                 else:
                     numero_lote_str = novo_lote
                     lote = Lote.objects.filter(alimento=alimento, numero_lote=numero_lote_str).first()
-                    
+
                     if lote:
                         lote.quantidade_atual += quantidade_real_estoque
                         lote.save()
@@ -380,7 +406,7 @@ def movimentacao_estoque(request):
                         if not data_validade:
                             messages.error(request, 'Informe a data de validade para criar um novo lote.')
                             return render(request, 'alimentos/movimentacao.html', {'form': form})
-                        
+
                         lote = Lote.objects.create(
                             alimento=alimento,
                             numero_lote=numero_lote_str,
@@ -394,8 +420,7 @@ def movimentacao_estoque(request):
                     tipo=tipo,
                     quantidade=quantidade_real_estoque
                 )
-                
-                # LOG
+
                 LogAtividade.objects.create(
                     usuario=request.user,
                     acao="Entrada de Estoque",
@@ -409,25 +434,27 @@ def movimentacao_estoque(request):
 
     return render(request, 'alimentos/movimentacao.html', {'form': form})
 
+
 # --- ALERTAS E ESTOQUE MÍNIMO ---
 @login_required
 def alerta_estoque_minimo(request):
-    alimentos_criticos = Alimento.objects.annotate(
-        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
+    alimentos_criticos = Alimento.objects.filter(ativo=True).annotate(
+        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), Decimal('0.00')),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
-        Q(total_estoque__lte=0) | 
+        Q(total_estoque__lte=Decimal('0.00')) |
         Q(total_estoque__lte=F('estoque_minimo_calc'))
     )
     return render(request, 'alimentos/estoque_minimo.html', {'alimentos_criticos': alimentos_criticos})
 
+
 @login_required
 def produtos_em_falta(request):
-    alimentos_faltantes = Alimento.objects.annotate(
-        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), 0),
+    alimentos_faltantes = Alimento.objects.filter(ativo=True).annotate(
+        total_estoque=Coalesce(Sum('lotes__quantidade_atual'), Decimal('0.00')),
         estoque_minimo_calc=F('quantidade_minima') * F('quantidade_embalagem')
     ).filter(
-        Q(total_estoque__lte=0) | 
+        Q(total_estoque__lte=Decimal('0.00')) |
         Q(total_estoque__lte=F('estoque_minimo_calc'))
     )
     return render(request, 'alimentos/produtos_em_falta.html', {'alimentos_faltantes': alimentos_faltantes})
@@ -437,6 +464,7 @@ def produtos_em_falta(request):
 @login_required
 def relatorios(request):
     return render(request, 'alimentos/relatorios.html')
+
 
 @login_required
 def relatorio_movimentacoes(request, tipo):
@@ -462,11 +490,11 @@ def relatorio_movimentacoes(request, tipo):
         data_fim = hoje
 
     movimentacoes = Movimentacao.objects.filter(
-        tipo=tipo_valor, 
+        tipo=tipo_valor,
         data_movimentacao__range=(data_inicio, data_fim)
     ).select_related('lote', 'lote__alimento').order_by('-data_movimentacao', 'lote__alimento__nome')
-    
-    total_quantidade = movimentacoes.aggregate(total=Sum('quantidade'))['total'] or 0
+
+    total_quantidade = movimentacoes.aggregate(total=Sum('quantidade'))['total'] or Decimal('0.00')
 
     return render(
         request,
@@ -481,6 +509,7 @@ def relatorio_movimentacoes(request, tipo):
             'total_quantidade': total_quantidade,
         }
     )
+
 
 @login_required
 def exportar_pdf_movimentacoes(request, tipo):
@@ -506,7 +535,7 @@ def exportar_pdf_movimentacoes(request, tipo):
         data_fim = data_inicio
 
     movimentacoes = Movimentacao.objects.filter(
-        tipo=tipo_valor, 
+        tipo=tipo_valor,
         data_movimentacao__range=(data_inicio, data_fim)
     ).select_related('lote', 'lote__alimento').order_by('-data_movimentacao', 'lote__alimento__nome')
 
@@ -576,14 +605,13 @@ def exportar_pdf_movimentacoes(request, tipo):
     ]))
 
     elementos.append(tabela)
-    
-    # LOG
+
     LogAtividade.objects.create(
         usuario=request.user,
         acao="Exportação de Relatório",
         detalhes=f"Exportou um relatório PDF de {tipo_valor} para o período de {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}."
     )
-    
+
     doc.build(elementos)
 
     return response
@@ -592,6 +620,7 @@ def exportar_pdf_movimentacoes(request, tipo):
 # --- GESTÃO DE CONTAS E APROVAÇÕES ---
 def is_coordenadora(user):
     return user.is_authenticated and (user.is_staff or user.is_superuser)
+
 
 def ativar_conta(request, uidb64, token):
     try:
@@ -604,42 +633,48 @@ def ativar_conta(request, uidb64, token):
         perfil, _ = Perfil.objects.get_or_create(user=user)
         perfil.email_verificado = True
         perfil.save(update_fields=['email_verificado'])
-            
+
         messages.success(request, "Email confirmado com sucesso! A sua conta encontra-se agora na fila para ser aprovada pela coordenadora.")
         return redirect('login')
     else:
         messages.error(request, "O link de ativação é inválido ou expirou.")
         return redirect('login')
 
+
 @login_required
 @user_passes_test(is_coordenadora, login_url='/')
 def aprovar_contas(request):
-    usuarios_pendentes = User.objects.filter(is_active=False, is_superuser=False, perfil__email_verificado=True).select_related('perfil').order_by('-date_joined')
-    usuarios_aprovados = User.objects.filter(is_active=True, is_superuser=False).select_related('perfil').order_by('username')
-    
+    usuarios_pendentes = User.objects.filter(
+        is_active=False, is_superuser=False, perfil__email_verificado=True
+    ).select_related('perfil').order_by('-date_joined')
+    usuarios_aprovados = User.objects.filter(
+        is_active=True, is_superuser=False
+    ).select_related('perfil').order_by('username')
+
     contexto = {
         'pendentes': usuarios_pendentes,
         'aprovados': usuarios_aprovados
     }
     return render(request, 'alimentos/aprovar_contas.html', contexto)
 
+
 @login_required
 @user_passes_test(is_coordenadora)
 def aprovar_conta(request, id):
     if request.method == 'POST':
         usuario = get_object_or_404(User, id=id)
-        usuario.is_active = True  
+        usuario.is_active = True
         usuario.save()
-        
-        # LOG
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Aprovação de Utilizador",
             detalhes=f"Aprovou a conta do utilizador '{usuario.username}'."
         )
-        
+
         messages.success(request, f"A conta de {usuario.username} foi aprovada com sucesso!")
     return redirect('aprovar_contas')
+
 
 @login_required
 @user_passes_test(is_coordenadora)
@@ -647,35 +682,35 @@ def recusar_conta(request, id):
     if request.method == 'POST':
         usuario = get_object_or_404(User, id=id)
         nome = usuario.username
-        usuario.delete()  
-        
-        # LOG
+        usuario.delete()
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Rejeição de Utilizador",
             detalhes=f"Rejeitou e excluiu a conta pendente do utilizador '{nome}'."
         )
-        
+
         messages.error(request, f"A conta de {nome} foi rejeitada e removida do sistema.")
     return redirect('aprovar_contas')
+
 
 @login_required
 @user_passes_test(is_coordenadora)
 def promover_admin(request, id):
     if request.method == 'POST':
         usuario = get_object_or_404(User, id=id)
-        usuario.is_staff = True  
+        usuario.is_staff = True
         usuario.save()
-        
-        # LOG
+
         LogAtividade.objects.create(
             usuario=request.user,
             acao="Promoção a Administrador",
             detalhes=f"Promoveu o utilizador '{usuario.username}' a Administrador."
         )
-        
+
         messages.success(request, f"O utilizador {usuario.username} foi promovido a Administrador com sucesso!")
     return redirect('aprovar_contas')
+
 
 @login_required
 @user_passes_test(is_coordenadora)
@@ -683,20 +718,20 @@ def rebaixar_admin(request, id):
     if request.method == 'POST':
         usuario = get_object_or_404(User, id=id)
         if usuario != request.user:
-            usuario.is_staff = False  
+            usuario.is_staff = False
             usuario.save()
-            
-            # LOG
+
             LogAtividade.objects.create(
                 usuario=request.user,
                 acao="Remoção de Privilégios",
                 detalhes=f"Removeu os privilégios de Administrador do utilizador '{usuario.username}'."
             )
-            
+
             messages.warning(request, f"Os privilégios de administrador de {usuario.username} foram removidos.")
         else:
             messages.error(request, "Não pode remover os seus próprios privilégios de administrador.")
     return redirect('aprovar_contas')
+
 
 @login_required
 @user_passes_test(is_coordenadora)
@@ -705,15 +740,14 @@ def excluir_conta(request, id):
         usuario = get_object_or_404(User, id=id)
         if usuario != request.user:
             nome = usuario.username
-            usuario.delete()  
-            
-            # LOG
+            usuario.delete()
+
             LogAtividade.objects.create(
                 usuario=request.user,
                 acao="Exclusão de Conta",
                 detalhes=f"Excluiu permanentemente a conta ativa do utilizador '{nome}'."
             )
-            
+
             messages.error(request, f"A conta de {nome} foi excluída permanentemente do sistema.")
         else:
             messages.error(request, "Não pode excluir a sua própria conta ativa a partir deste painel.")

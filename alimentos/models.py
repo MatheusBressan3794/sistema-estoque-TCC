@@ -27,6 +27,8 @@ class Alimento(models.Model):
         ('ALMOCO', 'Almoço'),
     ]
 
+    ativo = models.BooleanField(default=True)
+
     nome = models.CharField(max_length=100)
 
     embalagem = models.CharField(
@@ -67,49 +69,40 @@ class Alimento(models.Model):
 class Lote(models.Model):
     alimento = models.ForeignKey(
         Alimento,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='lotes'
     )
-
     numero_lote = models.CharField(max_length=100)
-
-    quantidade_atual = models.IntegerField(
-        default=0,
-        validators=[MinValueValidator(0)]
+    quantidade_atual = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        validators=[MinValueValidator(0.0)]
     )
-
     data_validade = models.DateField()
 
     def __str__(self):
         return f"{self.alimento.nome} - Lote {self.numero_lote}"
 
 
-# --- 3. MOVIMENTAÇÕES ---
+# Na class Movimentacao(models.Model):
 class Movimentacao(models.Model):
-
     TIPOS = [
         ('ENTRADA', 'Entrada'),
         ('SAIDA', 'Saída'),
     ]
-
     lote = models.ForeignKey(
         Lote,
         on_delete=models.PROTECT,
         related_name='movimentacoes'
     )
-
-    tipo = models.CharField(
-        max_length=10,
-        choices=TIPOS
+    tipo = models.CharField(max_length=10, choices=TIPOS)
+    quantidade = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)]
     )
-
-    quantidade = models.IntegerField(
-        validators=[MinValueValidator(1)]
-    )
-
-    data_movimentacao = models.DateField(
-        auto_now_add=True
-    )
+    data_movimentacao = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.tipo} - {self.lote.alimento.nome}"
